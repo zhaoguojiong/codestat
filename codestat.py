@@ -119,24 +119,6 @@ P_STAT_BY_MONTH = "--stat_by_month"
 P_OUTPUT_CONSOLE = "console"
 P_OUTPUT_FILE = "file"
 
-# 每个项目的统计结果，dict类型，key为project名称，value为统计结果数组[branch, lines, commits]
-proj_stat = {}
-# 每个项目、每个人的统计结果，dict类型，key为"project名称:author"，value为统计结果数组[branch, lines, commits]
-# key中的author可能为原始的author格式，即“name <email>”；也可能为规范的email。由命令行参数--original_author决定”
-proj_author_stat = {}
-# 每个人的统计结果（不区分项目），dict类型，key为"author"，value为统计结果数组[lines, commits]
-# author的格式同proj_author_stat的key中的author
-author_stat = {}
-
-# 每个月的proj_stat统计结果，dict类型，key为"this_month:next_month"，value为proj_stat{}
-# key中的this_month为统计月份的1日的日期，格式为yyyy-mm-dd，如2018-01-01；next_month为统计月份的下一个月的1日的日期，格式同this_month。
-# 例如，存放2018年1月的统计数据，则key为"2018-01-01:2018-02-01"
-proj_stat_month = {}
-# 每个月的proj_author_stat统计结果，dict类型，key同proj_stat_month，value为proj_author_stat{}
-proj_author_stat_month = {}
-# 每个月的author_stat统计结果，dict类型，key同proj_stat_month，value为author_stat{}
-author_stat_month = {}
-
 # 分隔符
 # proj_author_stat{}的key中的project与author之间的分隔符，例如：classroom:zhaoguojiong@xueleyun.com
 SEP_PROJ_AUTHOR_KEY = ":"
@@ -262,7 +244,7 @@ def get_latest_branch():
 # 解析git_log_stat_***.txt文件，统计整个项目的lines、commits，输出到proj_stat{}中；同时统计每个人的lines、commits，输出到proj_author_stat{}中
 # filename需包含完整路径
 # original_author决定是将原始的author、还是规范化后的author email输出到proj_author_stat{}中
-def parse_git_log_stat_file(proj, filename, original_author: False):
+def parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, filename, original_author: False):
 	logging.debug("parsing %s", filename)
 	total_lines = 0
 	total_commits = 0
@@ -353,6 +335,9 @@ def parse_git_log_stat_file(proj, filename, original_author: False):
 		branch = get_latest_branch()
 		proj_stat[proj] = [branch, total_lines, total_commits]
 
+	logging.debug("proj_stat{} total: %s, proj_author_stat{} total: %s, author_stat{} total: %s",
+		len(proj_stat), len(proj_author_stat), len(author_stat))
+
 # 计算proj_stat{}的lines和commits的总数
 def proj_stat_sum(stat):
 	total_lines = 0
@@ -427,9 +412,6 @@ def print_proj_stat_oneline(cols):
 
 # 格式化打印输出proj_stat{}，返回lines和commits的总数
 def print_proj_stat(stat):
-	if len(stat) == 0:
-		return 0, 0
-
 	# 打印表头
 	print_proj_stat_oneline(COLUMNS_PROJ_STAT)
 
@@ -471,7 +453,7 @@ def print_proj_author_stat_oneline(cols, author_width: 30):
 		str(cols[6]).rjust(PERCENT_COL_WIDTH)))	
 
 # 格式化打印输出proj_author_stat{}中的给定项目的总计行
-def print_proj_author_stat_proj_total(proj, proj_lines, proj_commits, author_width: 30):
+def print_proj_author_stat_proj_total(proj_stat, proj, proj_lines, proj_commits, author_width: 30):
 	# 如果proj_author_stat中的总计数值与proj_stat中的不同，则打印特殊标记
 	if proj_lines != proj_stat[proj][1]:
 		proj_lines = str(proj_lines) + "!=" + str(proj_stat[proj][1])
@@ -505,47 +487,44 @@ def get_max_author_len_in_proj_author_stat(stat):
 	return max_author_len
 
 # 格式化打印输出proj_author_stat{}
-def print_proj_author_stat(stat, subtotal: False):
-	if len(stat) == 0:
-		return 0, 0
-
+def print_proj_author_stat(proj_stat, proj_author_stat, subtotal: False):
 	# 获得author的最大长度
-	max_author_len = get_max_author_len_in_proj_author_stat(stat)
+	max_author_len = get_max_author_len_in_proj_author_stat(proj_author_stat)
 
 	# 打印表头
 	print_proj_author_stat_oneline(COLUMNS_PROJ_AUTHOR_STAT, max_author_len)
 
 	# 先统计每个项目的总数，因为要计算百分比
-	tmp_proj_stat = proj_author_stat_sum_by_proj(stat)
+	tmp_proj_stat = proj_author_stat_sum_by_proj(proj_author_stat)
 
 	# 打印每一行数据
 	total_commits = 0
 	total_lines = 0
 	last_proj = ""
-	for pa in stat:
+	for pa in proj_author_stat:
 		proj =  pa.split(SEP_PROJ_AUTHOR_KEY)[0]
 		author = pa.split(SEP_PROJ_AUTHOR_KEY)[1]
 		# 可能存在有commit、但lines为0的情况
 		if tmp_proj_stat[proj][0] == 0:
 			lines_percent = "-"
 		else:
-			lines_percent = "%.1f" % (stat[pa][1] / tmp_proj_stat[proj][0] * 100)
-		commits_percent = "%.1f" % (stat[pa][2] / tmp_proj_stat[proj][1] * 100)
+			lines_percent = "%.1f" % (proj_author_stat[pa][1] / tmp_proj_stat[proj][0] * 100)
+		commits_percent = "%.1f" % (proj_author_stat[pa][2] / tmp_proj_stat[proj][1] * 100)
 
 		# 先打印上一个项目的总计行
 		if subtotal and last_proj != "" and proj != last_proj:
-			print_proj_author_stat_proj_total([last_proj, tmp_proj_stat[last_proj][0], tmp_proj_stat[last_proj][1]], max_author_len)
+			print_proj_author_stat_proj_total(proj_stat, last_proj, tmp_proj_stat[last_proj][0], tmp_proj_stat[last_proj][1], max_author_len)
 		last_proj = proj
 
-		print_proj_author_stat_oneline([proj, stat[pa][0], author, stat[pa][1], lines_percent, stat[pa][2], commits_percent], max_author_len)
+		print_proj_author_stat_oneline([proj, proj_author_stat[pa][0], author, proj_author_stat[pa][1], lines_percent, proj_author_stat[pa][2], commits_percent], max_author_len)
 
 		# 累计所有项目的lines和commits
-		total_lines += stat[pa][1]
-		total_commits += stat[pa][2]
+		total_lines += proj_author_stat[pa][1]
+		total_commits += proj_author_stat[pa][2]
 
 	# 打印最后一个项目的总计行
-	if subtotal and len(stat) > 0:
-		print_proj_author_stat_proj_total([last_proj, tmp_proj_stat[last_proj][0], tmp_proj_stat[last_proj][1]], max_author_len)
+	if subtotal and len(proj_author_stat) > 0:
+		print_proj_author_stat_proj_total(proj_stat, last_proj, tmp_proj_stat[last_proj][0], tmp_proj_stat[last_proj][1], max_author_len)
 
 	# 打印最后的总计行
 	logging.info("")
@@ -628,9 +607,6 @@ def get_max_author_len_in_author_stat(stat):
 
 # 格式化打印输出author_stat{}
 def print_author_stat(stat):
-	if len(stat) == 0:
-		return 0, 0
-
 	# 获得author的最大长度
 	max_author_len = get_max_author_len_in_author_stat(stat)
 
@@ -691,7 +667,7 @@ def get_proj_path(proj):
 	return os.path.join(git_root, proj)
 
 # 生成给定项目的统计数据，保存到proj_stat{}、proj_author_stat{}、author_stat{}中
-def stat_proj(proj, since, before, create_log_needed: False, original_author: False):
+def stat_proj(proj_stat, proj_author_stat, author_stat, proj, since, before, create_log_needed: False, original_author: False):
 	# 获取该项目的完整路径
 	projdir = get_proj_path(proj)
 
@@ -705,11 +681,11 @@ def stat_proj(proj, since, before, create_log_needed: False, original_author: Fa
 		logging.error("please run again with --create_log option")
 		return
 
-	# 统计该项目的commits总数
-	parse_git_log_stat_file(proj, filename, original_author)
+	# 统计该项目
+	parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, filename, original_author)
 
 # 处理给定的git项目
-def process_proj(proj_group, proj, since, before, update_codes_needed: False, create_log_needed: False, original_author: False):
+def process_proj(proj_stat, proj_author_stat, author_stat, proj_group, proj, since, before, update_codes_needed: False, create_log_needed: False, original_author: False):
 	# 先检查该git项目是否已经存在，如果不存在，则先克隆项目
 	if not (proj in os.listdir(git_root)):
 		git_clone(proj_group, proj)
@@ -728,7 +704,7 @@ def process_proj(proj_group, proj, since, before, update_codes_needed: False, cr
 		git_fetch(projdir)
 
 	# 统计该项目的commits和lines
-	stat_proj(proj, since, before, create_log_needed, original_author)
+	stat_proj(proj_stat, proj_author_stat, author_stat, proj, since, before, create_log_needed, original_author)
 
 # 判断一个字符串是否为有效的日期
 def is_valid_date(date_str):
@@ -905,6 +881,24 @@ def get_cmd_params():
 
 # 入口函数
 def start_stat():
+	# 每个项目的统计结果，dict类型，key为project名称，value为统计结果数组[branch, lines, commits]
+	proj_stat = {}
+	# 每个项目、每个人的统计结果，dict类型，key为"project名称:author"，value为统计结果数组[branch, lines, commits]
+	# key中的author可能为原始的author格式，即“name <email>”；也可能为规范的email。由命令行参数--original_author决定”
+	proj_author_stat = {}
+	# 每个人的统计结果（不区分项目），dict类型，key为"author"，value为统计结果数组[lines, commits]
+	# author的格式同proj_author_stat的key中的author
+	author_stat = {}
+
+	# 每个月的proj_stat统计结果，dict类型，key为"this_month:next_month"，value为proj_stat{}
+	# key中的this_month为统计月份的1日的日期，格式为yyyy-mm-dd，如2018-01-01；next_month为统计月份的下一个月的1日的日期，格式同this_month。
+	# 例如，存放2018年1月的统计数据，则key为"2018-01-01:2018-02-01"
+	proj_stat_month = {}
+	# 每个月的proj_author_stat统计结果，dict类型，key同proj_stat_month，value为proj_author_stat{}
+	proj_author_stat_month = {}
+	# 每个月的author_stat统计结果，dict类型，key同proj_stat_month，value为author_stat{}
+	author_stat_month = {}
+
 	# 读取命令行参数
 	cmd_param_value = get_cmd_params()
 
@@ -913,6 +907,12 @@ def start_stat():
 		logging.basicConfig(level=logging.DEBUG)
 	else:
 		logging.basicConfig(level=logging.INFO)
+
+	# 如果git目录和output目录不存在， 则先创建目录
+	if not os.path.exists(git_root):
+		os.makedir(git_root)
+	if not os.path.exists(output_root):
+		os.makedir(output_root)
 
 	# 如果按月统计，则先生成月份列表
 	since_before = {}
@@ -951,6 +951,7 @@ def start_stat():
 		before = since_before[sb]
 		logging.info("%s %s", ("processing [since, before]: " + since + ", " + before).ljust(70), (str(n) + "/" + str(total_sb)).rjust(10))
 
+		# 每个新的时间周期处理之前，先清空三个***_stat{}
 		proj_stat = {}
 		proj_author_stat = {}
 		author_stat = {}
@@ -966,7 +967,8 @@ def start_stat():
 			group = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[0]
 			proj = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[1]
 			logging.info("processing %s/%s", group, proj)
-			process_proj(group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])
+			process_proj(proj_stat, proj_author_stat, author_stat, 
+				group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])				
 		# 否则，循环处理git_proj{}中指定的每一个git项目
 		else:
 			for group in git_proj:
@@ -975,7 +977,8 @@ def start_stat():
 				total = len(git_proj[group])
 				for proj in git_proj[group]:
 					logging.info("%s %s", ("processing project: " + proj).ljust(70), (str(num) + "/" + str(total)).rjust(10))
-					process_proj(group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])
+					process_proj(proj_stat, proj_author_stat, author_stat, 
+						group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])
 					num += 1
 				logging.info("")
 
@@ -999,7 +1002,7 @@ def start_stat():
 			# 格式化打印proj_stat{}
 			l1, c1 = print_proj_stat(proj_stat)
 			# 格式化打印proj_author_stat{}
-			l2, c2 = print_proj_author_stat(proj_author_stat, cmd_param_value[P_SUBTOTAL])
+			l2, c2 = print_proj_author_stat(proj_stat, proj_author_stat, cmd_param_value[P_SUBTOTAL])
 			# 格式化打印author_stat{}
 			l3, c3 = print_author_stat(author_stat)
 

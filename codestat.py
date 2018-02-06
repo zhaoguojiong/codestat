@@ -7,7 +7,21 @@ import sys
 import logging
 import datetime
 
-logging.basicConfig(level=logging.INFO)
+# 获得logger实例
+logger = logging.getLogger()
+# 设置日志格式
+formatter = logging.Formatter("%(levelname)s %(asctime)s: %(message)s", "%Y-%m-%d %H:%M:%S")
+# 设置文件日志处理器
+file_handler = logging.FileHandler("codestat.log")
+file_handler.setFormatter(formatter)
+# 设置控制台日志处理器
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
+# 为logger添加日志处理器（同时console输出和文件输出）
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+# 设置日志级别
+logger.setLevel(logging.INFO)
 
 # git代码库的根目录
 git_root = os.path.join(".", "git")
@@ -157,42 +171,42 @@ def git_clone(group_name, proj_name):
 	if proj_name in os.listdir(git_root):
 		return
 
-	logging.info("git cloning...")
+	logger.info("git cloning...")
 
 	# 构建git命令行
 	cmd_cd = 'cd %s' % git_root
 	cmd_git_clone = 'git clone git@git.xuelebj.net:%s/%s.git' % (group_name, proj_name)
 	cmd = '%s && %s' % (cmd_cd, cmd_git_clone) 
-	logging.debug(cmd)
+	logger.debug(cmd)
 	# 执行git命令行
 	os.system(cmd)
 
 # git pull最新代码
 def git_pull(path, branch):
-	logging.info("git pulling...")
+	logger.info("git pulling...")
 
 	# 构建git命令行
 	cmd_cd = "cd %s" % path
 	cmd_git_checkout = "git checkout %s" % branch
 	cmd_git_pull = "git pull"
 	cmd = "%s && %s && %s" % (cmd_cd, cmd_git_checkout, cmd_git_pull) 
-	logging.debug(cmd)
+	logger.debug(cmd)
 	# 执行git命令行
 	result = os.system(cmd)
-	logging.debug("command return: %s", result)
+	logger.debug("command return: %s", result)
 
 # git fetch最新代码
 def git_fetch(path):
-	logging.info("git fetching...")
+	logger.info("git fetching...")
 
 	# 构建git命令行
 	cmd_cd = "cd %s" % path
 	cmd_git_fetch = "git fetch origin"
 	cmd = "%s && %s" % (cmd_cd, cmd_git_fetch) 
-	logging.debug(cmd)
+	logger.debug(cmd)
 	# 执行git命令行
 	result = os.system(cmd)
-	logging.debug("command return: %s", result)
+	logger.debug("command return: %s", result)
 
 # 获取git_log_stat_***.txt文件名称（不含路径）
 def get_git_log_stat_filename_without_path(since, before):
@@ -208,7 +222,7 @@ def get_git_log_stat_filename_with_path(path, since, before):
 
 # 执行git log --stat命令，生成commit统计文件，包含每一次commit的author、date、及代码行数统计
 def create_git_log_stat_file(path, since, before):
-	logging.info("git logging...")
+	logger.info("git logger...")
 
 	# 构建git_log_stat_***.txt文件名称
 	filename = get_git_log_stat_filename_without_path(since, before)
@@ -217,10 +231,10 @@ def create_git_log_stat_file(path, since, before):
 	cmd_cd = "cd %s" % path
 	cmd_git_log = "git log --pretty=tformat:\"%%H%s%%an <%%ae>%s%%aI\" --stat --since=%s --before=%s --all > \"%s\"" % (SEP_GIT_LOG_COLUMN, SEP_GIT_LOG_COLUMN, since, before, filename)
 	cmd = "%s && %s" % (cmd_cd, cmd_git_log) 
-	logging.debug(cmd)
+	logger.debug(cmd)
 	# 执行git命令行
 	result = os.system(cmd)
-	logging.debug("command return: %s", result)
+	logger.debug("command return: %s", result)
 	
 	# 返回生成的文件名称
 	return get_git_log_stat_filename_with_path(path, since, before)
@@ -230,11 +244,11 @@ def create_git_log_stat_file(path, since, before):
 def normalize_author_email(author):
 	# 截取出原始的email
 	author_email = author.split(SEP_AUTHOR_EMAIL_BEGIN)[1].strip(SEP_AUTHOR_EMAIL_END)
-	logging.debug("split email: %s.", author_email)
+	logger.debug("split email: %s.", author_email)
 
 	if author_email in author_mapping:
 		new_author = author_mapping.get(author_email)
-		logging.debug("Notice: %s --> %s", author_email, new_author)
+		logger.debug("Notice: %s --> %s", author_email, new_author)
 	else:
 		new_author = author_email
 
@@ -248,7 +262,7 @@ def get_latest_branch():
 # filename需包含完整路径
 # original_author决定是将原始的author、还是规范化后的author email输出到proj_author_stat{}中
 def parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, filename, original_author: False):
-	logging.debug("parsing %s", filename)
+	logger.debug("parsing %s", filename)
 	total_lines = 0
 	total_commits = 0
 
@@ -266,7 +280,7 @@ def parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, file
 		try:
 			for line in f:
 				line = line.strip("\n")
-				logging.debug("reading a line: %s.", line)
+				logger.debug("reading a line: %s.", line)
 				
 				# 处理commit行
 				if SEP_GIT_LOG_COLUMN in line:
@@ -300,7 +314,7 @@ def parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, file
 					total_commits += 1
 				# 处理lines行
 				elif "changed" in line and ("insertion" in line or "deletion" in line):
-					logging.debug("parsing: %s.", line)
+					logger.debug("parsing: %s.", line)
 					# 可能有三种格式：
 					# 1： 3 files changed, 39 insertions(+), 106 deletions(-)
 					# 2： 1 file changed, 18 deletions(-)
@@ -310,7 +324,7 @@ def parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, file
 						insertions = insertions.split(" ")[0]
 					else:
 						insertions = 0
-					logging.debug("split insertions: %s.", insertions)
+					logger.debug("split insertions: %s.", insertions)
 					lines = int(insertions);
 
 					# 累加该项目中该人的lines，更新到proj_author_stat{}中
@@ -331,14 +345,14 @@ def parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, file
 					# 累加该项目的lines
 					total_lines += lines
 		except Exception as e:
-			logging.error(e)
+			logger.error(e)
 
 	# 将该项目的统计结果添加到proj_stat{}中
 	if total_commits > 0:
 		branch = get_latest_branch()
 		proj_stat[proj] = [branch, total_lines, total_commits]
 
-	logging.debug("proj_stat{} total: %s, proj_author_stat{} total: %s, author_stat{} total: %s",
+	logger.debug("proj_stat{} total: %s, proj_author_stat{} total: %s, author_stat{} total: %s",
 		len(proj_stat), len(proj_author_stat), len(author_stat))
 
 # 计算proj_stat{}的lines和commits的总数
@@ -359,7 +373,7 @@ def prepare_to_write(cols):
 		line += SEP_OUTPUT_FILE_COLUMN + str(c)
 	# 去掉行首第一个列分隔符
 	line = line.strip(SEP_OUTPUT_FILE_COLUMN)
-	logging.debug("prepare to write: %s", line)
+	logger.debug("prepare to write: %s", line)
 	return line + "\n"
 
 # 将proj_stat_month{}写入到文件中
@@ -374,7 +388,7 @@ def write_proj_stat(stat_month, whole_since, whole_before, stat_by_month: False)
 		filename = os.path.join(output_root, "proj_stat_%s_%s_month.txt" % (whole_since, whole_before))
 	else:
 		filename = os.path.join(output_root, "proj_stat_%s_%s.txt" % (whole_since, whole_before))
-	logging.info("writing to %s", filename)
+	logger.info("writing to %s", filename)
 	with open(filename, "w", encoding="utf-8") as f:
 		# 写入表头
 		line = prepare_to_write(["since", "before"] + COLUMNS_PROJ_STAT)
@@ -405,7 +419,7 @@ def print_proj_stat_oneline(cols):
 	COMMITS_COL_WIDTH = 20
 	PERCENT_COL_WIDTH = 10
 
-	logging.info("%s%s%s%s%s%s",
+	logger.info("%s%s%s%s%s%s",
 		str(cols[0]).rjust(PROJECT_COL_WIDTH), 
 		str(cols[1]).rjust(BRANCH_COL_WIDTH), 
 		str(cols[2]).rjust(LINES_COL_WIDTH), 
@@ -430,9 +444,9 @@ def print_proj_stat(stat):
 		print_proj_stat_oneline([p, stat[p][0], stat[p][1], lines_percent, stat[p][2], commits_percent])
 
 	# 打印最后的总计行
-	logging.info("")
+	logger.info("")
 	print_proj_stat_oneline(["total %d projects" % total_projects, "", total_lines, "", total_commits, ""])
-	logging.info("")
+	logger.info("")
 
 	return total_lines, total_commits
 
@@ -446,7 +460,7 @@ def print_proj_author_stat_oneline(cols, author_width: 30):
 	COMMITS_COL_WIDTH = 15
 	PERCENT_COL_WIDTH = 15
 
-	logging.info("%s%s%s%s%s%s%s" % (
+	logger.info("%s%s%s%s%s%s%s" % (
 		str(cols[0]).rjust(PROJECT_COL_WIDTH), 
 		str(cols[1]).rjust(BRANCH_COL_WIDTH), 
 		str(cols[2]).rjust(AUTHOR_COL_WIDTH), 
@@ -530,9 +544,9 @@ def print_proj_author_stat(proj_stat, proj_author_stat, subtotal: False):
 		print_proj_author_stat_proj_total(proj_stat, last_proj, tmp_proj_stat[last_proj][0], tmp_proj_stat[last_proj][1], max_author_len)
 
 	# 打印最后的总计行
-	logging.info("")
+	logger.info("")
 	print_proj_author_stat_oneline(["total %d projects" % len(tmp_proj_stat), "", "", total_lines, "", total_commits, ""], max_author_len)
-	logging.info("")
+	logger.info("")
 
 	return total_lines, total_commits
 
@@ -546,7 +560,7 @@ def write_proj_author_stat(stat_month, whole_since, whole_before, stat_by_month:
 		filename = os.path.join(output_root, "proj_author_stat_%s_%s_month.txt" % (whole_since, whole_before))
 	else:
 		filename = os.path.join(output_root, "proj_author_stat_%s_%s.txt" % (whole_since, whole_before))
-	logging.info("writing to %s", filename)
+	logger.info("writing to %s", filename)
 	with open(filename, 'w', encoding='utf-8') as f:
 		# 写入表头
 		line = prepare_to_write(['since', 'before'] + COLUMNS_PROJ_AUTHOR_STAT)
@@ -582,7 +596,7 @@ def print_author_stat_oneline(cols, author_width: 30):
 	COMMITS_COL_WIDTH = 15
 	PERCENT_COL_WIDTH = 15
 
-	logging.info("%s%s%s%s%s",
+	logger.info("%s%s%s%s%s",
 		str(cols[0]).rjust(AUTHOR_COL_WIDTH), 
 		str(cols[1]).rjust(LINES_COL_WIDTH), 
 		str(cols[2]).rjust(PERCENT_COL_WIDTH), 
@@ -627,9 +641,9 @@ def print_author_stat(stat):
 		print_author_stat_oneline([author, stat[author][0], lines_percent, stat[author][1], commits_percent], max_author_len)
 
 	# 打印最后的总计行
-	logging.info("")
+	logger.info("")
 	print_author_stat_oneline(["total %d authors" % len(stat), total_lines, "", total_commits, ""], max_author_len)
-	logging.info("")
+	logger.info("")
 
 	return total_lines, total_commits
 
@@ -643,7 +657,7 @@ def write_author_stat(stat_month, whole_since, whole_before, stat_by_month: Fals
 		filename = os.path.join(output_root, "author_stat_%s_%s_month.txt" % (whole_since, whole_before))
 	else:
 		filename = os.path.join(output_root, "author_stat_%s_%s.txt" % (whole_since, whole_before))
-	logging.info("writing to %s", filename)
+	logger.info("writing to %s", filename)
 	with open(filename, "w", encoding="utf-8") as f:
 		# 写入表头
 		line = prepare_to_write(["since", "before"] + COLUMNS_AUTHOR_STAT)
@@ -680,8 +694,8 @@ def stat_proj(proj_stat, proj_author_stat, author_stat, proj, since, before, cre
 	else:
 		filename = get_git_log_stat_filename_with_path(projdir, since, before)
 	if not os.path.exists(filename):
-		logging.error("%s is not existed", filename)
-		logging.error("please run again with --create_log option")
+		logger.error("%s is not existed", filename)
+		logger.error("please run again with --create_log option")
 		return
 
 	# 统计该项目
@@ -699,7 +713,7 @@ def process_proj(proj_stat, proj_author_stat, author_stat, proj_group, proj, sin
 	# 获取该项目的完整路径
 	projdir = get_proj_path(proj)
 	if not os.path.exists(projdir):
-		logging.error("%s is not existed" % projdir)
+		logger.error("%s is not existed" % projdir)
 		return
 
 	# 如果需要更新代码，先执行git fetch操作
@@ -749,7 +763,7 @@ def get_param_value(pv):
 
 # 获取命令行参数
 def get_cmd_params():
-	logging.basicConfig(level=logging.INFO)
+	logger.info("cmd: %s", sys.argv)
 
 	# usage提示信息中，各命令行参数的value
 	cmd_param = {
@@ -801,17 +815,17 @@ def get_cmd_params():
 		if P_PROJECT in a:
 			project = get_param_value(a)
 			if project == "":
-				logging.error("project is null")
-				logging.error(usage)
+				logger.error("project is null")
+				logger.error(usage)
 				exit()
 			elif not (SEP_CMD_PROJ in project):
-				logging.error("%s format: %s", P_PROJECT, cmd_param[P_PROJECT])
+				logger.error("%s format: %s", P_PROJECT, cmd_param[P_PROJECT])
 				exit()
 			else:
 				group = project.split(SEP_CMD_PROJ)[0]
 				proj = project.split(SEP_CMD_PROJ)[1]
 				if group == "" or proj == "":
-					logging.error("%s: group or project is null", a)
+					logger.error("%s: group or project is null", a)
 					exit()
 			cmd_pv[P_PROJECT] = project
 		elif P_UPDATE_CODES == a:
@@ -831,32 +845,32 @@ def get_cmd_params():
 		elif P_OUTPUT in a:
 			output = get_param_value(a)
 			if output == "":
-				logging.error("output is null")
-				logging.error(usage)
+				logger.error("output is null")
+				logger.error(usage)
 				exit()
 			elif not (output in [P_OUTPUT_CONSOLE, P_OUTPUT_FILE]):
-				logging.error("%s format: %s", P_OUTPUT, cmd_param[P_OUTPUT])
+				logger.error("%s format: %s", P_OUTPUT, cmd_param[P_OUTPUT])
 				exit()
 			cmd_pv[P_OUTPUT] = output
 		elif P_STAT_BY_MONTH == a:
 			cmd_pv[P_STAT_BY_MONTH] = True
 		else:
-			logging.error("%s is invalid", a)
-			logging.error(usage)
+			logger.error("%s is invalid", a)
+			logger.error(usage)
 			exit()
 
 	if since == "" and before == "":
-		logging.error("since or before is missed")
-		logging.info(usage)
+		logger.error("since or before is missed")
+		logger.info(usage)
 		exit()
 
 	if not (since == "") and not is_valid_date(since):
-		logging.error("since is not a valid date. format: yyyy-mm-dd")
-		logging.info(usage)
+		logger.error("since is not a valid date. format: yyyy-mm-dd")
+		logger.info(usage)
 		exit()
 	if not (before == "") and not is_valid_date(before):
-		logging.error("before is not a valid date. format: yyyy-mm-dd")
-		logging.info(usage)
+		logger.error("before is not a valid date. format: yyyy-mm-dd")
+		logger.info(usage)
 		exit()
 
 	# 对日期格式进行标准化
@@ -864,8 +878,8 @@ def get_cmd_params():
 	before = normalize_date(before)
 
 	if not (since == "") and not (before == "") and before <= since:
-		logging.error("before must > since")
-		logging.info(usage)
+		logger.error("before must > since")
+		logger.info(usage)
 		exit()
 
 	cmd_pv[P_SINCE] = since
@@ -877,8 +891,8 @@ def get_cmd_params():
 
 	# 打印命令行参数值
 	for pv in cmd_pv:
-		logging.info("%s: %s", pv, cmd_pv[pv])
-	logging.info("")
+		logger.info("%s: %s", pv, cmd_pv[pv])
+	logger.info("")
 
 	return cmd_pv
 
@@ -906,10 +920,10 @@ def start_stat():
 	cmd_param_value = get_cmd_params()
 
 	# 此处修改日志级别无效，不知为啥
-	if cmd_param_value[P_DEBUG]:
-		logging.basicConfig(level=logging.DEBUG)
-	else:
-		logging.basicConfig(level=logging.INFO)
+	# if cmd_param_value[P_DEBUG]:
+	# 	logger.basicConfig(level=logger.DEBUG)
+	# else:
+	# 	logger.basicConfig(level=logger.INFO)
 
 	# 如果git目录和output目录不存在， 则先创建目录
 	if not os.path.exists(git_root):
@@ -922,7 +936,7 @@ def start_stat():
 	if cmd_param_value[P_STAT_BY_MONTH]:
 		# 截止到今天的下一个月
 		max_before = get_next_month(datetime.datetime.now().strftime(DATE_FORMAT))
-		logging.debug("max before: %s", max_before)
+		logger.debug("max before: %s", max_before)
 
 		# 获得起始日期
 		since = cmd_param_value[P_SINCE]
@@ -931,9 +945,9 @@ def start_stat():
 		# 将字符串转换为日期进行比较
 		while datetime.datetime.strptime(next_month, DATE_FORMAT) < datetime.datetime.strptime(cmd_param_value[P_BEFORE], DATE_FORMAT):
 			# 截止到当前日期的下一个月
-			logging.debug("next month: %s, max month: %s", next_month, max_before)
+			logger.debug("next month: %s, max month: %s", next_month, max_before)
 			if next_month >= max_before:
-				logging.debug("max before occured")
+				logger.debug("max before occured")
 				break
 
 			# 添加到列表中
@@ -943,7 +957,7 @@ def start_stat():
 
 		# 将最后一个月加入到列表中
 		since_before[since] = cmd_param_value[P_BEFORE]
-		logging.debug(since_before)
+		logger.debug(since_before)
 	else:
 		since_before[cmd_param_value[P_SINCE]] = cmd_param_value[P_BEFORE]
 
@@ -952,7 +966,7 @@ def start_stat():
 	for sb in since_before:
 		since = sb
 		before = since_before[sb]
-		logging.info("%s %s", ("processing [since, before]: " + since + ", " + before).ljust(70), (str(n) + "/" + str(total_sb)).rjust(10))
+		logger.info("%s %s", ("processing [since, before]: " + since + ", " + before).ljust(70), (str(n) + "/" + str(total_sb)).rjust(10))
 
 		# 每个新的时间周期处理之前，先清空三个***_stat{}
 		proj_stat = {}
@@ -969,29 +983,29 @@ def start_stat():
 		if cmd_param_value[P_PROJECT] != "":
 			group = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[0]
 			proj = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[1]
-			logging.info("processing %s/%s", group, proj)
+			logger.info("processing %s/%s", group, proj)
 			process_proj(proj_stat, proj_author_stat, author_stat, 
 				group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])				
 		# 否则，循环处理git_proj{}中指定的每一个git项目
 		else:
 			for group in git_proj:
-				logging.info("processing group: %s", group)
+				logger.info("processing group: %s", group)
 				num = 1
 				total = len(git_proj[group])
 				for proj in git_proj[group]:
-					logging.info("%s %s", ("processing project: " + proj).ljust(70), (str(num) + "/" + str(total)).rjust(10))
+					logger.info("%s %s", ("processing project: " + proj).ljust(70), (str(num) + "/" + str(total)).rjust(10))
 					process_proj(proj_stat, proj_author_stat, author_stat, 
 						group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])
 					num += 1
-				logging.info("")
+				logger.info("")
 
 			# 输出未变更的项目清单
-			logging.info("projects not changed:")
+			logger.info("projects not changed:")
 			for group in git_proj:
 				for proj in git_proj[group]:
 					if not (proj in proj_stat):
-						logging.info(proj)
-			logging.info("")
+						logger.info(proj)
+			logger.info("")
 
 		# 将这次since-before周期内的统计结果保存到***_month{}中
 		key = since + SEP_STAT_MONTH_KEY + before
@@ -1001,7 +1015,7 @@ def start_stat():
 
 		# 将统计结果打印到标准输出终端上
 		if cmd_param_value[P_OUTPUT] == P_OUTPUT_CONSOLE:
-			logging.info("since=%s, before=%s", since, before)
+			logger.info("since=%s, before=%s", since, before)
 			# 格式化打印proj_stat{}
 			l1, c1 = print_proj_stat(proj_stat)
 			# 格式化打印proj_author_stat{}
@@ -1011,8 +1025,8 @@ def start_stat():
 
 			# 如果三个矩阵统计数据不一致，则打印警告信息
 			if [l2, c2] != [l1, c1] or [l3, c3] != [l2, c2]:
-				logging.warn("")
-				logging.warn("total number in 3 tables is not equal. ")
+				logger.warn("")
+				logger.warn("total number in 3 tables is not equal. ")
 
 		n += 1
 

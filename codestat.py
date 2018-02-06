@@ -167,16 +167,19 @@ def git_clone(group_name, proj_name):
 	# 执行git命令行
 	os.system(cmd)
 
-# git pull最新代码（暂时没用，目前使用git fetch）
+# git pull最新代码
 def git_pull(path, branch):
+	logging.info("git pulling...")
+
 	# 构建git命令行
-	cmd_cd = 'cd %s' % path
-	cmd_git_checkout = 'git checkout %s' % branch
-	cmd_git_pull = 'git pull'
-	cmd = '%s && %s && %s' % (cmd_cd, cmd_git_checkout, cmd_git_pull) 
+	cmd_cd = "cd %s" % path
+	cmd_git_checkout = "git checkout %s" % branch
+	cmd_git_pull = "git pull"
+	cmd = "%s && %s && %s" % (cmd_cd, cmd_git_checkout, cmd_git_pull) 
 	logging.debug(cmd)
 	# 执行git命令行
-	os.system(cmd)
+	result = os.system(cmd)
+	logging.debug("command return: %s", result)
 
 # git fetch最新代码
 def git_fetch(path):
@@ -910,9 +913,9 @@ def start_stat():
 
 	# 如果git目录和output目录不存在， 则先创建目录
 	if not os.path.exists(git_root):
-		os.makedir(git_root)
+		os.mkdir(git_root)
 	if not os.path.exists(output_root):
-		os.makedir(output_root)
+		os.mkdir(output_root)
 
 	# 如果按月统计，则先生成月份列表
 	since_before = {}

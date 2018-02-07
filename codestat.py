@@ -30,7 +30,7 @@ output_root = os.path.join(".", "output")
 
 # 要处理的git项目清单，dict结构，key为group名称，value为项目名称
 git_proj = {
-	'xueledata': [
+	"xueledata": [
 		'treasury',
 		'tracking-data-monitor',
 		'testkit',
@@ -83,7 +83,7 @@ git_proj = {
 		'XFlume',
 		'question-sim'
 	],
-	'xueleapp': [
+	"xueleapp": [
 		'classroom',
 		'smartclass-web-autotest',
 		'smartclass-api',
@@ -92,6 +92,54 @@ git_proj = {
 		'call-convert-machine-mfc'
 	]
 }
+
+# 统计final lines的文件扩展名
+# 每增加一个新的ext，需要：
+# 1. print_final_lines_stat_oneline()中，增加一个"str(cols[xxx]).rjust(EXT_COL_WIDTH)"
+code_file_ext = [
+	# Java项目
+	".java", 
+	# 仓库项目
+	".sh", ".sql", ".job", 
+	# 前端项目
+	".htm", ".html", ".css", ".less", ".js", ".ts", ".vue", 
+	# Python项目
+	".py", 
+	#C/C++项目
+	".c", ".cpp", ".h", 
+	# Scala项目
+	".scala", 
+	# 配置及其它文件
+	".properties", ".md", ".xml", ".yml", ".bat", ".json"]
+
+# 统计final lines时要跳过的文件扩展名
+skipped_file_ext = [
+	# IDEA项目文件
+	".iml", 
+	# VC项目文件
+	".vcxproj", 
+	# 备份文件
+	".bak", 
+	# 二进制文件
+	".jar", ".zip", ".gz", ".7z", ".tar", ".war", ".class", ".exe", ".dat",
+	".png", ".gif", ".jpg", ".bmp", ".ico", ".cur", ".mp3", ".wav", ".m4a", ".flac", ".wma", ".wmv", ".mp4", ".flv",
+	".otf", ".eot", ".ttf", ".woff", ".swf", ".crc", ".psd", ".ogg",
+	".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pages", ".numbers", ".key", ".vsd",
+	# 其它数据文件
+	".out", ".txt", ".log", ".dic", ".csv"]
+
+# 统计final lines时要跳过的目录或文件
+skipped_path = [
+	# git目录
+	".git", 
+	# svn目录
+	".svn", 	
+	# IDEA目录
+	".idea", 
+	# Mac
+	".DS_Store",
+	# Java编译后输出
+	"target"]
 
 # 特殊author email的映射，dict结构，key为不规范的email，value为规范的email
 author_mapping = {
@@ -156,11 +204,17 @@ SEP_CMD_PARAM_VALUE = "="
 SEP_OUTPUT_FILE_COLUMN = "\t"
 
 # 输出proj_stat{}时的表头列名
-COLUMNS_PROJ_STAT = ["project", "branch", "added lines", "lines%", "commits", "commits%"]
+metrics = ["added lines", "lines%", "commits", "commits%"]
+COLUMNS_PROJ_STAT = ["project", "branch"] + metrics
 # 输出proj_author_stat{}时的表头列名
-COLUMNS_PROJ_AUTHOR_STAT = ["project", "branch", "author", "added lines", "lines%", "commits", "commits%"]
+COLUMNS_PROJ_AUTHOR_STAT = ["project", "branch", "author"] + metrics
 # 输出author_stat{}时的表头列名
-COLUMNS_AUTHOR_STAT = ["author", "added lines", "lines%", "commits", "commits%"]
+COLUMNS_AUTHOR_STAT = ["author"] + metrics
+# 输出final_lines_stat{}时的表头列名
+# final_lines_stat{}中的特殊key
+FINAL_LINES_TOTAL = "total"
+FINAL_LINES_OTHERS = "others"
+COLUMNS_FINAL_LINES_STAT = ["project", "final lines", "lines%"] + code_file_ext + [FINAL_LINES_OTHERS]
 
 # 日期格式
 DATE_FORMAT = "%Y" + SEP_DATE + "%m" + SEP_DATE + "%d"
@@ -679,12 +733,255 @@ def write_author_stat(stat_month, whole_since, whole_before, stat_by_month: Fals
 				line = prepare_to_write([since, before, author, stat[author][0], lines_percent, stat[author][1], commits_percent])
 				f.write(line)
 
+# 格式化打印输出final_lines_stat{}的一行
+def print_final_lines_stat_oneline(cols):
+	# 设置各列的宽度
+	PROJECT_COL_WIDTH = 30
+	LINES_COL_WIDTH = 20
+	PERCENT_COL_WIDTH = 10
+	EXT_COL_WIDTH = 10
+
+	# 头三列：project, total lines, percentage
+	fmt = "%s%s%s"
+	# 中间的ext列
+	for e in code_file_ext:
+		fmt += "%s"
+	# 最后的others列
+	fmt += "%s"
+
+	logger.info(fmt,
+		str(cols[0]).rjust(PROJECT_COL_WIDTH), 
+		str(cols[1]).rjust(LINES_COL_WIDTH), 
+		str(cols[2]).rjust(PERCENT_COL_WIDTH), 
+		str(cols[3]).rjust(EXT_COL_WIDTH), 
+		str(cols[4]).rjust(EXT_COL_WIDTH),
+		str(cols[5]).rjust(EXT_COL_WIDTH),
+		str(cols[6]).rjust(EXT_COL_WIDTH),
+		str(cols[7]).rjust(EXT_COL_WIDTH),
+		str(cols[8]).rjust(EXT_COL_WIDTH),
+		str(cols[9]).rjust(EXT_COL_WIDTH),
+		str(cols[10]).rjust(EXT_COL_WIDTH),
+		str(cols[11]).rjust(EXT_COL_WIDTH),
+		str(cols[12]).rjust(EXT_COL_WIDTH),
+		str(cols[13]).rjust(EXT_COL_WIDTH),
+		str(cols[14]).rjust(EXT_COL_WIDTH),
+		str(cols[15]).rjust(EXT_COL_WIDTH),
+		str(cols[16]).rjust(EXT_COL_WIDTH),
+		str(cols[17]).rjust(EXT_COL_WIDTH),
+		str(cols[18]).rjust(EXT_COL_WIDTH),
+		str(cols[19]).rjust(EXT_COL_WIDTH),
+		str(cols[20]).rjust(EXT_COL_WIDTH),
+		str(cols[21]).rjust(EXT_COL_WIDTH),
+		str(cols[22]).rjust(EXT_COL_WIDTH),
+		str(cols[23]).rjust(EXT_COL_WIDTH),
+		str(cols[24]).rjust(EXT_COL_WIDTH),
+		str(cols[25]).rjust(EXT_COL_WIDTH))
+
+# 计算final_lines_stat{}中的final lines的总数
+def final_lines_stat_sum(stat):
+	total_lines = 0
+	for p in stat:
+		# 累计所有项目的final lines
+		total_lines += int(stat[p][FINAL_LINES_TOTAL])
+
+	return total_lines
+
+# 格式化打印输出final_lines_stat{}
+def print_final_lines_stat(stat):
+	# 打印表头
+	print_final_lines_stat_oneline(COLUMNS_FINAL_LINES_STAT)
+
+	# 先统计所有项目的总数，因为要计算百分比
+	total_lines = final_lines_stat_sum(stat)
+
+	# 打印每一行数据
+	for p in stat:
+		lines_percent = "%.1f" % (stat[p][FINAL_LINES_TOTAL] / total_lines * 100)
+
+		# 前三列：project, total lines, percent
+		row = [p, stat[p][FINAL_LINES_TOTAL], lines_percent]
+		# 中间的ext列
+		for e in code_file_ext:
+			row += [stat[p][e]]
+		# 最后的others列
+		row += [stat[p][FINAL_LINES_OTHERS]]
+		print_final_lines_stat_oneline(row)
+
+	# 打印最后的总计行
+	logger.info("")
+	# 前三列：project, total lines, percent
+	last_row = ["total %d projects" % len(stat), total_lines, ""]
+	# 中间的ext列
+	for e in code_file_ext:
+		last_row += [""]
+	# 最后的others列
+	last_row += [""]
+	print_final_lines_stat_oneline(last_row)
+	logger.info("")
+
+# 将final_lines_stat{}写入到文件中
+def write_final_lines_stat(stat):
+	if len(stat) == 0:
+		return
+
+	# 构建输出文件名称（位于当前目录下）
+	today = datetime.datetime.now().strftime(DATE_FORMAT)
+	filename = os.path.join(output_root, "final_lines_stat_%s.txt" % today)
+
+	logger.info("writing to %s", filename)
+	with open(filename, "w", encoding="utf-8") as f:
+		# 写入表头
+		line = prepare_to_write(["til"] + COLUMNS_FINAL_LINES_STAT)
+		f.write(line)
+
+		# 先统计所有项目的总数，因为要计算百分比
+		total_lines = final_lines_stat_sum(stat)
+
+		for p in stat:
+			# 打印每一行数据
+			lines_percent = "%.1f" % (stat[p][FINAL_LINES_TOTAL] / total_lines * 100)
+
+			# 前四列：date, project, total lines, percent
+			row = [today, p, stat[p][FINAL_LINES_TOTAL], lines_percent]
+			# 中间的ext列
+			for e in code_file_ext:
+				row += [stat[p][e]]
+			# 最后的others列
+			row += [stat[p][FINAL_LINES_OTHERS]]
+
+			line = prepare_to_write(row)
+			f.write(line)
+
 # 获取给定项目的完整路径
 def get_proj_path(proj):
 	return os.path.join(git_root, proj)
 
+# 递归统计给定目录下的文件行数，返回predefined_ext和undefined_ext。
+# predefined_ext为一个dict结构，key为预定义的文件扩展名（即存在于code_file_ext中的扩展名），value为final lines。
+#   但是，所有的未定义的扩展名，也会作为一个统一的“others”扩展名（一个key），也计入到此dict中
+# undefined_ext为一个dict结构，key为未定义的文件扩展名，value为final lines
+# skipped_files为一个数组结构，保存跳过的文件列表
+# error_files为一个数组结构，保存read文件有异常的文件列表
+def count_lines(path, predefined_ext, undefined_ext, skipped_files, error_files):
+	for file in os.listdir(path):
+		# 获得完整路径
+		file_path = os.path.join(path, file)
+
+		# 跳过一些目录或文件
+		if file in skipped_path:
+			skipped_files += [file_path]
+			logger.debug("%s is skipped.", file)
+			continue
+
+		# 如果是目录，则继续递归
+		if os.path.isdir(file_path):
+			count_lines(file_path, predefined_ext, undefined_ext, skipped_files, error_files)
+			continue
+
+		# 获取文件扩展名（转换为小写）
+		ext = os.path.splitext(file)[1].lower()
+
+		# 跳过一些扩展名（精确匹配）
+		if ext in skipped_file_ext:
+			skipped_files += [file_path]
+			logger.debug("%s is skipped, because ext: %s", file, ext)
+			continue
+
+		# 统计文件行数
+		file_lines = 0
+		read_error = False
+		# 先尝试以utf-8读取
+		try:
+			with open(file_path, "r", encoding = "utf-8") as f:
+				for l in f:
+					file_lines += 1
+			read_error = False
+			logger.debug("%s: %d final lines.", file_path, file_lines)
+		except Exception as e:
+			read_error = True
+			utf_error = e
+			logger.debug(e)
+
+		# 再尝试以gbk读取
+		if read_error:
+			try:
+				with open(file_path, "r", encoding = "gbk") as f:
+					for l in f:
+						file_lines += 1
+				read_error = False
+				logger.debug("%s: %d final lines.", file_path, file_lines)
+			except Exception as e:
+				read_error = True
+				gbk_error = e
+				logger.debug(e)
+
+		# 再尝试以utl-16读取
+		if read_error:
+			try:
+				with open(file_path, "r", encoding = "utf-16") as f:
+					for l in f:
+						file_lines += 1
+				read_error = False
+				logger.debug("%s: %d final lines.", file_path, file_lines)
+			except Exception as e:
+				# 认为不是一个文本文件，不统计lines
+				read_error = True
+				error_files += [file_path + (" (%s; %s; %s)" % (utf_error, gbk_error, e))]
+				logger.debug(e)
+				logger.debug("%s is not a text file? just skipped.", file_path)
+				continue
+
+		# 如果扩展名是预定义的，则按原扩展名分类统计；否则，统一计入到“others”类别中
+		if not (ext in code_file_ext):
+			if not (ext in undefined_ext):
+				undefined_ext[ext] = file_lines
+			else:
+				undefined_ext[ext] += file_lines
+			logger.debug("undefined ext: %s, file: %s", ext, file_path)
+			ext = FINAL_LINES_OTHERS
+
+		predefined_ext[ext] += file_lines
+
+# 递归项目的代码目录，统计final lines，保存到final_lines_stat{}中
+def stat_final_lines(stat, proj):
+	# 获取该项目的完整路径
+	projdir = get_proj_path(proj)
+
+	# 初始化要返回的predefined_ext{}、undefined_ext{}和skipped_file[]
+	predefined_ext = {FINAL_LINES_TOTAL: 0, FINAL_LINES_OTHERS: 0}
+	for e in code_file_ext:
+		predefined_ext[e] = 0
+	undefined_ext = {}
+	skipped_files = []
+	error_files = []
+
+	# 统计该项目下的final lines
+	count_lines(projdir, predefined_ext, undefined_ext, skipped_files, error_files)
+
+	# 计算所有ext的lines的总和（不包含未定义扩展名的lines）
+	for e in predefined_ext:
+		if not (e in [FINAL_LINES_TOTAL, FINAL_LINES_OTHERS]):
+			predefined_ext[FINAL_LINES_TOTAL] += predefined_ext[e]
+
+	# 添加到final_lines_stat{}中
+	stat[proj] = predefined_ext
+
+	# 打印undefined_ext{}
+	if len(undefined_ext) > 0:
+		logger.info("final lines of undefined ext: %s", undefined_ext)
+	# 打印跳过的文件列表
+	# if len(skipped_files) > 0:
+	# 	logger.info("skipped %d files:", len(skipped_files))
+	# 	for f in skipped_files:
+	# 		logger.info(f)
+	# 打印read异常的文件列表
+	if len(error_files) > 0:
+		logger.info("%d error files:", len(error_files))
+		for f in error_files:
+			logger.info(f)
+
 # 生成给定项目的统计数据，保存到proj_stat{}、proj_author_stat{}、author_stat{}中
-def stat_proj(proj_stat, proj_author_stat, author_stat, proj, since, before, create_log_needed: False, original_author: False):
+def stat_commits(proj_stat, proj_author_stat, author_stat, proj, since, before, create_log_needed: False, original_author: False):
 	# 获取该项目的完整路径
 	projdir = get_proj_path(proj)
 
@@ -698,11 +995,11 @@ def stat_proj(proj_stat, proj_author_stat, author_stat, proj, since, before, cre
 		logger.error("please run again with --create_log option")
 		return
 
-	# 统计该项目
+	# 统计该项目的commits和added lines
 	parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, filename, original_author)
 
 # 处理给定的git项目
-def process_proj(proj_stat, proj_author_stat, author_stat, proj_group, proj, since, before, update_codes_needed: False, create_log_needed: False, original_author: False):
+def process_proj(proj_stat, proj_author_stat, author_stat, final_lines_stat, proj_group, proj, since, before, update_codes_needed: False, create_log_needed: False, original_author: False):
 	# 先检查该git项目是否已经存在，如果不存在，则先克隆项目
 	if not (proj in os.listdir(git_root)):
 		git_clone(proj_group, proj)
@@ -716,12 +1013,18 @@ def process_proj(proj_stat, proj_author_stat, author_stat, proj_group, proj, sin
 		logger.error("%s is not existed" % projdir)
 		return
 
-	# 如果需要更新代码，先执行git fetch操作
+	# 如果需要更新代码，先执行git fetch和git pull操作
 	if update_codes_needed:
+		# 执行git fetch，用于后续的统计所有分支的commits和added lines
 		git_fetch(projdir)
+		# 执行git pull，用于后续的统计master分支中的final lines
+		git_pull(projdir, "master")
 
 	# 统计该项目的commits和lines
-	stat_proj(proj_stat, proj_author_stat, author_stat, proj, since, before, create_log_needed, original_author)
+	stat_commits(proj_stat, proj_author_stat, author_stat, proj, since, before, create_log_needed, original_author)
+
+	# 统计该项目的final lines
+	stat_final_lines(final_lines_stat, proj)
 
 # 判断一个字符串是否为有效的日期
 def is_valid_date(date_str):
@@ -916,6 +1219,9 @@ def start_stat():
 	# 每个月的author_stat统计结果，dict类型，key同proj_stat_month，value为author_stat{}
 	author_stat_month = {}
 
+	# 每个项目的final lines统计结果，dict类型，key为project名称，value为final lines的一个dict类型，其中key为扩展名，value为final lines
+	final_lines_stat = {}
+
 	# 读取命令行参数
 	cmd_param_value = get_cmd_params()
 
@@ -984,7 +1290,7 @@ def start_stat():
 			group = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[0]
 			proj = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[1]
 			logger.info("processing %s/%s", group, proj)
-			process_proj(proj_stat, proj_author_stat, author_stat, 
+			process_proj(proj_stat, proj_author_stat, author_stat, final_lines_stat,
 				group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])				
 		# 否则，循环处理git_proj{}中指定的每一个git项目
 		else:
@@ -994,7 +1300,7 @@ def start_stat():
 				total = len(git_proj[group])
 				for proj in git_proj[group]:
 					logger.info("%s %s", ("processing project: " + proj).ljust(70), (str(num) + "/" + str(total)).rjust(10))
-					process_proj(proj_stat, proj_author_stat, author_stat, 
+					process_proj(proj_stat, proj_author_stat, author_stat, final_lines_stat,
 						group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])
 					num += 1
 				logger.info("")
@@ -1028,6 +1334,9 @@ def start_stat():
 				logger.warn("")
 				logger.warn("total number in 3 tables is not equal. ")
 
+			# 格式化打印final_lines_stat{}
+			print_final_lines_stat(final_lines_stat)
+
 		n += 1
 
 	# 将统计结果输出到文件中
@@ -1035,6 +1344,7 @@ def start_stat():
 		write_proj_stat(proj_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
 		write_proj_author_stat(proj_author_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
 		write_author_stat(author_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
+		write_final_lines_stat(final_lines_stat)
 
 if __name__ == "__main__":
 	start_stat()

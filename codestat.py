@@ -276,7 +276,7 @@ def get_git_log_stat_filename_with_path(path, since, before):
 
 # 执行git log --stat命令，生成commit统计文件，包含每一次commit的author、date、及代码行数统计
 def create_git_log_stat_file(path, since, before):
-	logger.info("git logger...")
+	logger.info("git logging...")
 
 	# 构建git_log_stat_***.txt文件名称
 	filename = get_git_log_stat_filename_without_path(since, before)
@@ -998,8 +998,8 @@ def stat_commits(proj_stat, proj_author_stat, author_stat, proj, since, before, 
 	# 统计该项目的commits和added lines
 	parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, filename, original_author)
 
-# 处理给定的git项目
-def process_proj(proj_stat, proj_author_stat, author_stat, final_lines_stat, proj_group, proj, since, before, update_codes_needed: False, create_log_needed: False, original_author: False):
+# 处理给定的git项目的commits和added lines
+def process_proj_commits(proj_stat, proj_author_stat, author_stat, proj_group, proj, since, before, update_codes_needed: False, create_log_needed: False, original_author: False):
 	# 先检查该git项目是否已经存在，如果不存在，则先克隆项目
 	if not (proj in os.listdir(git_root)):
 		git_clone(proj_group, proj)
@@ -1013,15 +1013,32 @@ def process_proj(proj_stat, proj_author_stat, author_stat, final_lines_stat, pro
 		logger.error("%s is not existed" % projdir)
 		return
 
-	# 如果需要更新代码，先执行git fetch和git pull操作
+	# 如果需要更新代码，先执行git fetch操作
 	if update_codes_needed:
 		# 执行git fetch，用于后续的统计所有分支的commits和added lines
 		git_fetch(projdir)
-		# 执行git pull，用于后续的统计master分支中的final lines
-		git_pull(projdir, "master")
 
 	# 统计该项目的commits和lines
 	stat_commits(proj_stat, proj_author_stat, author_stat, proj, since, before, create_log_needed, original_author)
+
+# 处理给定的git项目的final lines
+def process_proj_final_lines(final_lines_stat, proj_group, proj, update_codes_needed: False):
+	# 先检查该git项目是否已经存在，如果不存在，则先克隆项目
+	if not (proj in os.listdir(git_root)):
+		git_clone(proj_group, proj)
+		# 如果克隆了新项目，则必须更新代码
+		update_codes_needed = True
+
+	# 获取该项目的完整路径
+	projdir = get_proj_path(proj)
+	if not os.path.exists(projdir):
+		logger.error("%s is not existed" % projdir)
+		return
+
+	# 如果需要更新代码，先执行git pull操作
+	if update_codes_needed:
+		# 执行git pull，用于后续的统计master分支中的final lines
+		git_pull(projdir, "master")
 
 	# 统计该项目的final lines
 	stat_final_lines(final_lines_stat, proj)
@@ -1237,6 +1254,8 @@ def start_stat():
 	if not os.path.exists(output_root):
 		os.mkdir(output_root)
 
+	# 先统计commits和added lines，涉及到多个月份的拆分问题
+	logger.info("processing commits and added lines...")
 	# 如果按月统计，则先生成月份列表
 	since_before = {}
 	if cmd_param_value[P_STAT_BY_MONTH]:
@@ -1290,7 +1309,7 @@ def start_stat():
 			group = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[0]
 			proj = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[1]
 			logger.info("processing %s/%s", group, proj)
-			process_proj(proj_stat, proj_author_stat, author_stat, final_lines_stat,
+			process_proj_commits(proj_stat, proj_author_stat, author_stat,
 				group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])				
 		# 否则，循环处理git_proj{}中指定的每一个git项目
 		else:
@@ -1300,7 +1319,7 @@ def start_stat():
 				total = len(git_proj[group])
 				for proj in git_proj[group]:
 					logger.info("%s %s", ("processing project: " + proj).ljust(70), (str(num) + "/" + str(total)).rjust(10))
-					process_proj(proj_stat, proj_author_stat, author_stat, final_lines_stat,
+					process_proj_commits(proj_stat, proj_author_stat, author_stat,
 						group, proj, since, before, update_codes, cmd_param_value[P_CREATE_LOG], cmd_param_value[P_ORIGINAL_AUTHOR])
 					num += 1
 				logger.info("")
@@ -1334,10 +1353,33 @@ def start_stat():
 				logger.warn("")
 				logger.warn("total number in 3 tables is not equal. ")
 
-			# 格式化打印final_lines_stat{}
-			print_final_lines_stat(final_lines_stat)
-
 		n += 1
+
+	# 然后统计final lines，不管是否指定了--stat_by_month，只统计一次
+	logger.info("processing final lines...")
+	# 如果命令行参数中指定了project，则只统计这个project
+	if cmd_param_value[P_PROJECT] != "":
+		group = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[0]
+		proj = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[1]
+		logger.info("processing %s/%s", group, proj)
+		# 统计该项目的final lines
+		process_proj_final_lines(final_lines_stat, group, proj, cmd_param_value[P_UPDATE_CODES])
+	# 否则，循环处理git_proj{}中指定的每一个git项目
+	else:
+		for group in git_proj:
+			logger.info("processing group: %s", group)
+			num = 1
+			total = len(git_proj[group])
+			for proj in git_proj[group]:
+				logger.info("%s %s", ("processing project: " + proj).ljust(70), (str(num) + "/" + str(total)).rjust(10))
+				# 统计该项目的final lines
+				process_proj_final_lines(final_lines_stat, group, proj, cmd_param_value[P_UPDATE_CODES])
+				num += 1
+			logger.info("")
+
+	if cmd_param_value[P_OUTPUT] == P_OUTPUT_CONSOLE:
+		# 格式化打印final_lines_stat{}
+		print_final_lines_stat(final_lines_stat)
 
 	# 将统计结果输出到文件中
 	if cmd_param_value[P_OUTPUT] == P_OUTPUT_FILE:

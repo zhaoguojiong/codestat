@@ -179,10 +179,13 @@ P_SUBTOTAL = "--subtotal"
 P_DEBUG = "--debug"
 P_OUTPUT = "--output"
 P_STAT_BY_MONTH = "--stat_by_month"
+P_STAT_TYPE = "--stat_type"
 
 # 部分命令行参数的有效value
 P_OUTPUT_CONSOLE = "console"
 P_OUTPUT_FILE = "file"
+P_STAT_TYPE_COMMITS = "commits"
+P_STAT_TYPE_FINAL_LINES = "final-lines"
 
 # 分隔符
 # proj_author_stat{}的key中的project与author之间的分隔符，例如：classroom:zhaoguojiong@xueleyun.com
@@ -247,6 +250,19 @@ def git_pull(path, branch):
 	cmd_git_checkout = "git checkout %s" % branch
 	cmd_git_pull = "git pull"
 	cmd = "%s && %s && %s" % (cmd_cd, cmd_git_checkout, cmd_git_pull) 
+	logger.debug(cmd)
+	# 执行git命令行
+	result = os.system(cmd)
+	logger.debug("command return: %s", result)
+
+# git checkout分支
+def git_checkout(path, branch):
+	logger.info("git checkouting...")
+
+	# 构建git命令行
+	cmd_cd = "cd %s" % path
+	cmd_git_checkout = "git checkout %s" % branch
+	cmd = "%s && %s" % (cmd_cd, cmd_git_checkout) 
 	logger.debug(cmd)
 	# 执行git命令行
 	result = os.system(cmd)
@@ -1060,6 +1076,9 @@ def process_proj_final_lines(final_lines_stat, proj_group, proj, update_codes_ne
 	if update_codes_needed:
 		# 执行git pull，用于后续的统计master分支中的final lines
 		git_pull(projdir, "master")
+	# 切换到master分支
+	else:
+		git_checkout(projdir, "master")
 
 	# 统计该项目的final lines
 	stat_final_lines(final_lines_stat, proj)
@@ -1108,16 +1127,17 @@ def get_cmd_params():
 
 	# usage提示信息中，各命令行参数的value
 	cmd_param = {
-		P_PROJECT: "group/project",
+		P_PROJECT: "<group>" + SEP_CMD_PROJ + "<project>",
 		P_UPDATE_CODES: "",
 		P_CREATE_LOG: "",
-		P_SINCE: "yyyy-mm-dd",
-		P_BEFORE: "yyyy-mm-dd",
+		P_SINCE: "<yyyy-mm-dd>",
+		P_BEFORE: "<yyyy-mm-dd>",
 		P_ORIGINAL_AUTHOR: "",
 		P_SUBTOTAL: "",
 		P_DEBUG: "",
 		P_OUTPUT: P_OUTPUT_CONSOLE + "/" + P_OUTPUT_FILE,
-		P_STAT_BY_MONTH: ""
+		P_STAT_BY_MONTH: "",
+		P_STAT_TYPE: P_STAT_TYPE_COMMITS + "/" + P_STAT_TYPE_FINAL_LINES
 	}
 
 	# 构造usage提示信息
@@ -1139,13 +1159,15 @@ def get_cmd_params():
 		P_SUBTOTAL: False,
 		P_DEBUG: False,
 		P_OUTPUT: P_OUTPUT_CONSOLE,
-		P_STAT_BY_MONTH: False
+		P_STAT_BY_MONTH: False,
+		P_STAT_TYPE: ""
 	}
 
 	group = ""
 	proj = ""
 	since = ""
 	before = ""
+	stat_type = ""
 	i = 0
 	for a in sys.argv:
 		# 跳过第一个参数，即脚本名称自身
@@ -1153,10 +1175,20 @@ def get_cmd_params():
 			i += 1
 			continue
 
-		if P_PROJECT in a:
+		if P_STAT_TYPE in a:
+			stat_type = get_param_value(a)
+			if stat_type == "":
+				logger.error("value of %s is null", P_STAT_TYPE)
+				logger.error(usage)
+				exit()
+			elif not (stat_type in [P_STAT_TYPE_COMMITS, P_STAT_TYPE_FINAL_LINES]):
+				logger.error("%s format: %s", P_STAT_TYPE, cmd_param[P_STAT_TYPE])
+				exit()
+			cmd_pv[P_STAT_TYPE] = stat_type
+		elif P_PROJECT in a:
 			project = get_param_value(a)
 			if project == "":
-				logger.error("project is null")
+				logger.error("value of %s is null", P_PROJECT)
 				logger.error(usage)
 				exit()
 			elif not (SEP_CMD_PROJ in project):
@@ -1172,7 +1204,7 @@ def get_cmd_params():
 		elif P_UPDATE_CODES == a:
 			cmd_pv[P_UPDATE_CODES] = True
 		elif P_CREATE_LOG == a:
-			cmd_pv[P_CREATE_LOG] = True			
+			cmd_pv[P_CREATE_LOG] = True
 		elif P_SINCE in a:
 			since = get_param_value(a)
 		elif P_BEFORE in a:
@@ -1186,7 +1218,7 @@ def get_cmd_params():
 		elif P_OUTPUT in a:
 			output = get_param_value(a)
 			if output == "":
-				logger.error("output is null")
+				logger.error("value of %s is null", P_OUTPUT)
 				logger.error(usage)
 				exit()
 			elif not (output in [P_OUTPUT_CONSOLE, P_OUTPUT_FILE]):
@@ -1200,31 +1232,38 @@ def get_cmd_params():
 			logger.error(usage)
 			exit()
 
-	if since == "" and before == "":
-		logger.error("since or before is missed")
+	if stat_type == "":
+		logger.error("%s is missed", P_STAT_TYPE)
 		logger.info(usage)
 		exit()
 
-	if not (since == "") and not is_valid_date(since):
-		logger.error("since is not a valid date. format: yyyy-mm-dd")
-		logger.info(usage)
-		exit()
-	if not (before == "") and not is_valid_date(before):
-		logger.error("before is not a valid date. format: yyyy-mm-dd")
-		logger.info(usage)
-		exit()
+	# 统计commits时，才需要有since、before参数
+	if stat_type == P_STAT_TYPE_COMMITS:
+		if since == "" and before == "":
+			logger.error("%s or %s is missed", P_SINCE, P_BEFORE)
+			logger.info(usage)
+			exit()
 
-	# 对日期格式进行标准化
-	since = normalize_date(since)
-	before = normalize_date(before)
+		if not (since == "") and not is_valid_date(since):
+			logger.error("value of %s is not a valid date. format: yyyy-mm-dd", P_SINCE)
+			logger.info(usage)
+			exit()
+		if not (before == "") and not is_valid_date(before):
+			logger.error("value of %s is not a valid date. format: yyyy-mm-dd", P_BEFORE)
+			logger.info(usage)
+			exit()
 
-	if not (since == "") and not (before == "") and before <= since:
-		logger.error("before must > since")
-		logger.info(usage)
-		exit()
+		# 对日期格式进行标准化
+		since = normalize_date(since)
+		before = normalize_date(before)
 
-	cmd_pv[P_SINCE] = since
-	cmd_pv[P_BEFORE] = before
+		if not (since == "") and not (before == "") and before <= since:
+			logger.error("value of %s must > %s", P_BEFORE, P_SINCE)
+			logger.info(usage)
+			exit()
+
+		cmd_pv[P_SINCE] = since
+		cmd_pv[P_BEFORE] = before
 
 	# 如果需要更新代码，则必须重新生成log文件，此时忽略命令行参数
 	if cmd_pv[P_UPDATE_CODES]:
@@ -1417,9 +1456,11 @@ def start():
 		os.mkdir(output_root)
 
 	# 处理commits和added lines
-	process_commits(cmd_param_value)
+	if cmd_param_value[P_STAT_TYPE] == P_STAT_TYPE_COMMITS:
+		process_commits(cmd_param_value)
 	# 处理final lines
-	process_final_lines(cmd_param_value)
+	elif cmd_param_value[P_STAT_TYPE] == P_STAT_TYPE_FINAL_LINES:
+		process_final_lines(cmd_param_value)
 
 if __name__ == "__main__":
 	start()

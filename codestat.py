@@ -6,6 +6,8 @@ import os
 import sys
 import logging
 import datetime
+# 需要先执行pip install chardet进行安装
+import chardet
 
 # 获得logger实例
 logger = logging.getLogger()
@@ -121,12 +123,13 @@ skipped_file_ext = [
 	# 备份文件
 	".bak", 
 	# 二进制文件
-	".jar", ".zip", ".gz", ".7z", ".tar", ".war", ".class", ".exe", ".dat",
+	".jar", ".zip", ".gz", ".7z", ".tar", ".war", ".class", ".exe", ".dat", ".swp", ".keystore", ".jks", ".aps",
 	".png", ".gif", ".jpg", ".bmp", ".ico", ".cur", ".mp3", ".wav", ".m4a", ".flac", ".wma", ".wmv", ".mp4", ".flv",
 	".otf", ".eot", ".ttf", ".woff", ".swf", ".crc", ".psd", ".ogg",
 	".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pages", ".numbers", ".key", ".vsd",
 	# 其它数据文件
-	".out", ".txt", ".log", ".dic", ".csv"]
+	".out", ".txt", ".log", ".dic", ".csv", 
+	".avro"]
 
 # 统计final lines时要跳过的目录或文件
 skipped_path = [
@@ -888,47 +891,61 @@ def count_lines(path, predefined_ext, undefined_ext, skipped_files, error_files)
 			continue
 
 		# 统计文件行数
+		# 先尝试以utf-8读取文件，如果有异常再去获取文件编码、再次读取。
+		# 因为获取文件编码的耗时较长，而绝大多数文件都是utf-8编码，所以采取此优化策略
 		file_lines = 0
+		codec = "utf-8"
 		read_error = False
-		# 先尝试以utf-8读取
 		try:
-			with open(file_path, "r", encoding = "utf-8") as f:
+			with open(file_path, "r", encoding = codec) as f:
 				for l in f:
 					file_lines += 1
-			read_error = False
-			logger.debug("%s: %d final lines.", file_path, file_lines)
+			logger.debug("%s: %d final lines. [%s]", file_path, file_lines, codec)
 		except Exception as e:
 			read_error = True
-			utf_error = e
 			logger.debug(e)
 
-		# 再尝试以gbk读取
+		# 读文件异常时，最大可能是编码问题，此时获取文件编码（耗时较长）
 		if read_error:
+			# 获得文件编码格式
+			codec = ""
 			try:
-				with open(file_path, "r", encoding = "gbk") as f:
-					for l in f:
-						file_lines += 1
-				read_error = False
-				logger.debug("%s: %d final lines.", file_path, file_lines)
+				with open(file_path, "rb") as f:
+					data = f.read()
+				result = chardet.detect(data)
+				codec = result["encoding"]
+				logger.debug("file: %s, encoding: %s", file_path, codec) 
 			except Exception as e:
-				read_error = True
-				gbk_error = e
+				error = e
 				logger.debug(e)
 
-		# 再尝试以utl-16读取
-		if read_error:
+			# 获取编码失败，记录到error_files[]中，然后跳过
+			if codec == "":
+				error_files += [file_path + (" (%s)" % error)]
+				logger.error("error ocurred when detect encoding: %s, just skipped.", file_path)
+				continue
+
+			# 未获取到编码（可能是二进制文件），记录到skipped_files[]中，然后跳过
+			if codec is None:
+				skipped_files += [file_path + (" (encoding is %s)" % codec)]
+				logger.debug("encoding is None: %s, just skipped.", file_path)
+				continue
+
+			# chardet似乎有bug，有些js文件检测结果为Windows-1254，但实际为utf-8，所以在此做一个修正
+			original_codec = codec
+			if codec == "Windows-1254":
+				codec = "utf-8"
+
+			# 再次读取文件
 			try:
-				with open(file_path, "r", encoding = "utf-16") as f:
+				with open(file_path, "r", encoding = codec) as f:
 					for l in f:
 						file_lines += 1
-				read_error = False
-				logger.debug("%s: %d final lines.", file_path, file_lines)
+				logger.debug("%s: %d final lines. [%s]", file_path, file_lines, codec)
 			except Exception as e:
 				# 认为不是一个文本文件，不统计lines
-				read_error = True
-				error_files += [file_path + (" (%s; %s; %s)" % (utf_error, gbk_error, e))]
+				error_files += [file_path + (" [%s --> %s] (%s)" % (original_codec, codec, e))]
 				logger.debug(e)
-				logger.debug("%s is not a text file? just skipped.", file_path)
 				continue
 
 		# 如果扩展名是预定义的，则按原扩展名分类统计；否则，统一计入到“others”类别中
@@ -969,11 +986,15 @@ def stat_final_lines(stat, proj):
 	# 打印undefined_ext{}
 	if len(undefined_ext) > 0:
 		logger.info("final lines of undefined ext: %s", undefined_ext)
+	# 打印跳过的文件数量、读取失败的文件数量
+	logger.info("skipped files: %d, error files: %d", len(skipped_files), len(error_files))
+
 	# 打印跳过的文件列表
 	# if len(skipped_files) > 0:
 	# 	logger.info("skipped %d files:", len(skipped_files))
 	# 	for f in skipped_files:
 	# 		logger.info(f)
+	
 	# 打印read异常的文件列表
 	if len(error_files) > 0:
 		logger.info("%d error files:", len(error_files))
@@ -998,7 +1019,7 @@ def stat_commits(proj_stat, proj_author_stat, author_stat, proj, since, before, 
 	# 统计该项目的commits和added lines
 	parse_git_log_stat_file(proj_stat, proj_author_stat, author_stat, proj, filename, original_author)
 
-# 处理给定的git项目的commits和added lines
+# 处理给定项目的commits和added lines
 def process_proj_commits(proj_stat, proj_author_stat, author_stat, proj_group, proj, since, before, update_codes_needed: False, create_log_needed: False, original_author: False):
 	# 先检查该git项目是否已经存在，如果不存在，则先克隆项目
 	if not (proj in os.listdir(git_root)):
@@ -1021,7 +1042,7 @@ def process_proj_commits(proj_stat, proj_author_stat, author_stat, proj_group, p
 	# 统计该项目的commits和lines
 	stat_commits(proj_stat, proj_author_stat, author_stat, proj, since, before, create_log_needed, original_author)
 
-# 处理给定的git项目的final lines
+# 处理给定项目的final lines
 def process_proj_final_lines(final_lines_stat, proj_group, proj, update_codes_needed: False):
 	# 先检查该git项目是否已经存在，如果不存在，则先克隆项目
 	if not (proj in os.listdir(git_root)):
@@ -1216,8 +1237,8 @@ def get_cmd_params():
 
 	return cmd_pv
 
-# 入口函数
-def start_stat():
+# 处理commits和added lines
+def process_commits(cmd_param_value):
 	# 每个项目的统计结果，dict类型，key为project名称，value为统计结果数组[branch, lines, commits]
 	proj_stat = {}
 	# 每个项目、每个人的统计结果，dict类型，key为"project名称:author"，value为统计结果数组[branch, lines, commits]
@@ -1236,25 +1257,6 @@ def start_stat():
 	# 每个月的author_stat统计结果，dict类型，key同proj_stat_month，value为author_stat{}
 	author_stat_month = {}
 
-	# 每个项目的final lines统计结果，dict类型，key为project名称，value为final lines的一个dict类型，其中key为扩展名，value为final lines
-	final_lines_stat = {}
-
-	# 读取命令行参数
-	cmd_param_value = get_cmd_params()
-
-	# 此处修改日志级别无效，不知为啥
-	# if cmd_param_value[P_DEBUG]:
-	# 	logger.basicConfig(level=logger.DEBUG)
-	# else:
-	# 	logger.basicConfig(level=logger.INFO)
-
-	# 如果git目录和output目录不存在， 则先创建目录
-	if not os.path.exists(git_root):
-		os.mkdir(git_root)
-	if not os.path.exists(output_root):
-		os.mkdir(output_root)
-
-	# 先统计commits和added lines，涉及到多个月份的拆分问题
 	logger.info("processing commits and added lines...")
 	# 如果按月统计，则先生成月份列表
 	since_before = {}
@@ -1355,8 +1357,20 @@ def start_stat():
 
 		n += 1
 
-	# 然后统计final lines，不管是否指定了--stat_by_month，只统计一次
+	# 将统计结果输出到文件中
+	if cmd_param_value[P_OUTPUT] == P_OUTPUT_FILE:
+		write_proj_stat(proj_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
+		write_proj_author_stat(proj_author_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
+		write_author_stat(author_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
+
+# 处理final lines
+def process_final_lines(cmd_param_value):
+	# 每个项目的final lines统计结果，dict类型，key为project名称，value为final lines的一个dict类型，其中key为扩展名，value为final lines
+	final_lines_stat = {}
+
 	logger.info("processing final lines...")
+	logger.info("dir or file to be skipped: %s", skipped_path)
+	logger.info("ext to be skipped: %s", skipped_file_ext)
 	# 如果命令行参数中指定了project，则只统计这个project
 	if cmd_param_value[P_PROJECT] != "":
 		group = cmd_param_value[P_PROJECT].split(SEP_CMD_PROJ)[0]
@@ -1383,10 +1397,29 @@ def start_stat():
 
 	# 将统计结果输出到文件中
 	if cmd_param_value[P_OUTPUT] == P_OUTPUT_FILE:
-		write_proj_stat(proj_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
-		write_proj_author_stat(proj_author_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
-		write_author_stat(author_stat_month, cmd_param_value[P_SINCE], cmd_param_value[P_BEFORE], cmd_param_value[P_STAT_BY_MONTH])
 		write_final_lines_stat(final_lines_stat)
 
+# 入口函数
+def start():
+	# 读取命令行参数
+	cmd_param_value = get_cmd_params()
+
+	# 此处修改日志级别无效，不知为啥
+	# if cmd_param_value[P_DEBUG]:
+	# 	logger.basicConfig(level=logger.DEBUG)
+	# else:
+	# 	logger.basicConfig(level=logger.INFO)
+
+	# 如果git目录和output目录不存在， 则先创建目录
+	if not os.path.exists(git_root):
+		os.mkdir(git_root)
+	if not os.path.exists(output_root):
+		os.mkdir(output_root)
+
+	# 处理commits和added lines
+	process_commits(cmd_param_value)
+	# 处理final lines
+	process_final_lines(cmd_param_value)
+
 if __name__ == "__main__":
-	start_stat()
+	start()

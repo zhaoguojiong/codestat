@@ -513,7 +513,7 @@ class FinalLinesStat(Stat):
 		# 头三列：project, total lines, percentage
 		fmt = '%s%s%s'
 		# 中间的ext列
-		for e in code_file_ext:
+		for ext in code_file_ext:
 			fmt += '%s'
 		# 最后的others列
 		fmt += '%s'
@@ -625,18 +625,18 @@ class FinalLinesStat(Stat):
 # 判断一个字符串是否为有效的日期
 def is_valid_date(date_str):
 	try:
-		date = datetime.datetime.strptime(date_str, DATE_FORMAT)
+		datetime.datetime.strptime(date_str, DATE_FORMAT)
 		return True
-	except Exception as e:
+	except Exception:
 		return False
 
 # 标准化日期字符串，变为：yyyy-mm-dd
 def normalize_date(date_str):
 	# 通过日期格式化方法，比较笨
 	# 先转换为日期
-	date = datetime.datetime.strptime(date_str, DATE_FORMAT)
+	the_date = datetime.datetime.strptime(date_str, DATE_FORMAT)
 	# 然后再对日期进行格式化：yyyy-mm-dd
-	return date.strftime(DATE_FORMAT)	
+	return the_date.strftime(DATE_FORMAT)	
 
 # 返回下一个月份，格式为：yyyy-mm-dd
 def get_next_month(date_str):
@@ -656,7 +656,8 @@ def get_next_month(date_str):
 def get_pv(pv):
 	v = pv.split(SEP_cmd_pv)
 	if len(v) > 1:
-		return v[1]
+		# 对于Mac，命令行参数的末尾会带一个'\r'
+		return v[1].strip('\r')
 	else:
 		return ''
 

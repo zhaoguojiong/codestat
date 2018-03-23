@@ -871,7 +871,7 @@ def process_commits(cmd_pv):
 	# 初始化***Month对象
 	proj_stat_month = ProjStatMonth('proj_stat', cmd_pv[P_SINCE], cmd_pv[P_BEFORE], cmd_pv[P_STAT_BY_MONTH])
 	proj_author_stat_month = ProjAuthorStatMonth('proj_author_stat', cmd_pv[P_SINCE], cmd_pv[P_BEFORE], cmd_pv[P_STAT_BY_MONTH])
-	author_stat_month = AuthorStatMonth('author', cmd_pv[P_SINCE], cmd_pv[P_BEFORE], cmd_pv[P_STAT_BY_MONTH])
+	author_stat_month = AuthorStatMonth('author_stat', cmd_pv[P_SINCE], cmd_pv[P_BEFORE], cmd_pv[P_STAT_BY_MONTH])
 
 	# 生成月份列表
 	since_before = get_month_list(cmd_pv[P_SINCE], cmd_pv[P_BEFORE], cmd_pv[P_STAT_BY_MONTH])

@@ -6,8 +6,6 @@ import os
 import sys
 import logging
 import datetime
-# 需要先安装chardet（执行pip install chardet）
-import chardet
 
 import projstat
 import config

@@ -60,7 +60,12 @@ git_proj = {
 		'dataservice-resources',
 		'XScheduler',
 		'XFlume',
-		'question-sim'
+		'question-sim',
+		'question-difficulty-estimation', # 2018-03-06 add
+		'kp-estimation', # 2018-03-06 add
+		'bigscreen', # 2018-03-09 add
+		'bigscreen-api', # 2018-03-09 add
+		'kpdiag-autotest' # 2018-03-12 add
 	],
 	'xueleapp': [
 		'classroom',

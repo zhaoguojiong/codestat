@@ -76,3 +76,61 @@ git_proj = {
 		'call-convert-machine-mfc'
 	]
 }
+
+# 统计final lines时要跳过的文件扩展名
+skipped_file_ext = [
+	# IDEA项目文件
+	".iml", 
+	# VC项目文件
+	".vcxproj", 
+	# 备份文件
+	".bak", 
+	# 二进制文件
+	".jar", ".zip", ".gz", ".7z", ".tar", ".war", ".class", ".exe", ".dat", ".swp", ".keystore", ".jks", ".aps",
+	".png", ".gif", ".jpg", ".bmp", ".ico", ".cur", ".mp3", ".wav", ".m4a", ".flac", ".wma", ".wmv", ".mp4", ".flv",
+	".otf", ".eot", ".ttf", ".woff", ".swf", ".crc", ".psd", ".ogg",
+	".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pages", ".numbers", ".key", ".vsd",
+	# 其它数据文件
+	".out", ".txt", ".log", ".dic", ".csv", 
+	".avro"]
+
+# 统计final lines时要跳过的目录或文件
+skipped_path = [
+	# git目录
+	'.git', 
+	# svn目录
+	'.svn', 	
+	# IDEA目录
+	'.idea', 
+	# VSCode目录
+	'.vscode',
+	# Python目录
+	'__pycache__',
+	# Mac
+	'.DS_Store',
+	# Java编译后输出
+	'target']
+
+# 特殊author email的映射，dict结构，key为不规范的email，value为规范的email
+author_mapping = {
+	'xl123456': 'wenhuanhuan@xueleyun.com',
+	'wenhuanhuan@task1-sandbox.xuele.net': 'wenhuanhuan@xueleyun.com',
+
+	'chongfq@qq.com': 'chongfaqin@xueleyun.com',
+	'pengxiuzhao@task1-sandbox.xuele.net': 'pengxiuzhao@xueleyun.com',
+	'18210507492@126.com': 'qindongliang@xueleyun.com',
+
+	'15901206690@139.com': 'lvnan@xueleyun.com',
+	'lvnan@xuele.com': 'lvnan@xueleyun.com',
+
+	'王子美@home': 'wangzimei@xueleyun.com',
+	'王子美': 'wangzimei@xueleyun.com',
+
+	'hwwweb@163.com': 'huoweiwei@xueleyun.com',
+	'bigdata@task1-sandbox.xuele.net': 'bigdata',
+	'yue': 'guiqiuyue@xueleyun.com',
+	'lianxiaolei@hqyxjy.com': 'lianxiaolei@xueleyun.com',
+
+	'476143560@qqcom': 'chenliang@xueleyun.com',
+	'chenliang@xuele.com': 'chenliang@xueleyun.com'
+}

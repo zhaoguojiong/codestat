@@ -76,8 +76,7 @@ COLUMNS_AUTHOR_STAT = ['author'] + metrics
 # 输出final_lines_stat{}时的表头列名
 FINAL_LINES_TOTAL = projstat.Project.FINAL_LINES_TOTAL
 FINAL_LINES_OTHERS = projstat.Project.FINAL_LINES_OTHERS
-code_file_ext = projstat.Project.code_file_ext
-COLUMNS_FINAL_LINES_STAT = ['project', 'final lines', 'lines%'] + code_file_ext + [FINAL_LINES_OTHERS]
+COLUMNS_FINAL_LINES_STAT = ['project', 'final lines', 'lines%'] + projstat.Project.code_file_ext + [FINAL_LINES_OTHERS]
 
 # 日期格式
 DATE_FORMAT = '%Y' + SEP_DATE + '%m' + SEP_DATE + '%d'
@@ -511,7 +510,7 @@ class FinalLinesStat(Stat):
 		# 头三列：project, total lines, percentage
 		fmt = '%s%s%s'
 		# 中间的ext列
-		for ext in code_file_ext:
+		for ext in projstat.Project.code_file_ext:
 			fmt += '%s'
 		# 最后的others列
 		fmt += '%s'
@@ -569,7 +568,7 @@ class FinalLinesStat(Stat):
 			# 前三列：project, total lines, percent
 			row = [p, self.__stat[p][FINAL_LINES_TOTAL], lines_percent]
 			# 中间的ext列
-			for e in code_file_ext:
+			for e in projstat.Project.code_file_ext:
 				row += [self.__stat[p][e]]
 			# 最后的others列
 			row += [self.__stat[p][FINAL_LINES_OTHERS]]
@@ -580,7 +579,7 @@ class FinalLinesStat(Stat):
 		# 前三列：project, total lines, percent
 		last_row = ['total %d projects' % len(self.__stat), total_lines, ' ']
 		# 中间的ext列
-		for e in code_file_ext:
+		for e in projstat.Project.code_file_ext:
 			last_row += [' ']
 		# 最后的others列
 		last_row += [' ']
@@ -612,7 +611,7 @@ class FinalLinesStat(Stat):
 				# 前四列：date, project, total lines, percent
 				row = [today, p, self.__stat[p][FINAL_LINES_TOTAL], lines_percent]
 				# 中间的ext列
-				for e in code_file_ext:
+				for e in projstat.Project.code_file_ext:
 					row += [self.__stat[p][e]]
 				# 最后的others列
 				row += [self.__stat[p][FINAL_LINES_OTHERS]]
@@ -963,8 +962,8 @@ def process_final_lines(cmd_pv):
 	final_lines_stat = FinalLinesStat()
 
 	logger.info('processing final lines...')
-	logger.info('dir or file to be skipped: %s', projstat.Project.skipped_path)
-	logger.info('ext to be skipped: %s', projstat.Project.skipped_file_ext)
+	logger.info('dir or file to be skipped: %s', config.skipped_path)
+	logger.info('ext to be skipped: %s', config.skipped_file_ext)
 
 	# 获得待处理的project列表
 	proj_list = get_proj_list(cmd_pv[P_PROJECT])

@@ -9,6 +9,7 @@ import sys
 import logging
 # 需要先执行pip install chardet进行安装
 import chardet
+import config
 
 # 项目类
 class Project(object):
@@ -18,7 +19,8 @@ class Project(object):
 	__git_root = os.path.join(".", "git")
 
 	# 统计final lines的文件扩展名（即只统计这些扩展名文件的代码行数）
-	# 之所以为公共变量，是因为其他文件需要知道这些扩展名，而且通过类就可以拿到这些扩展名，而不需先实例化一个对象才能拿到（所以没有设计set_xxx方法）。
+	# 之所以为公共变量，是因为其他文件需要知道这些扩展名，而且通过类就可以拿到这些扩展名，而不需先实例化一个对象才能拿到（所以没有设计set_xxx方法）
+	# 每增加一个新的扩展名，就需要修改codestat.FinalLinesStat.__print_oneline方法
 	code_file_ext = [
 		# Java项目
 		".java", 
@@ -34,64 +36,6 @@ class Project(object):
 		".scala", 
 		# 配置及其它文件
 		".properties", ".md", ".xml", ".yml", ".bat", ".json"]
-
-	# 统计final lines时要跳过的文件扩展名
-	skipped_file_ext = [
-		# IDEA项目文件
-		".iml", 
-		# VC项目文件
-		".vcxproj", 
-		# 备份文件
-		".bak", 
-		# 二进制文件
-		".jar", ".zip", ".gz", ".7z", ".tar", ".war", ".class", ".exe", ".dat", ".swp", ".keystore", ".jks", ".aps",
-		".png", ".gif", ".jpg", ".bmp", ".ico", ".cur", ".mp3", ".wav", ".m4a", ".flac", ".wma", ".wmv", ".mp4", ".flv",
-		".otf", ".eot", ".ttf", ".woff", ".swf", ".crc", ".psd", ".ogg",
-		".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pages", ".numbers", ".key", ".vsd",
-		# 其它数据文件
-		".out", ".txt", ".log", ".dic", ".csv", 
-		".avro"]
-
-	# 统计final lines时要跳过的目录或文件
-	skipped_path = [
-		# git目录
-		'.git', 
-		# svn目录
-		'.svn', 	
-		# IDEA目录
-		'.idea', 
-		# VSCode目录
-		'.vscode',
-		# Python目录
-		'__pycache__',
-		# Mac
-		'.DS_Store',
-		# Java编译后输出
-		'target']
-
-	# 特殊author email的映射，dict结构，key为不规范的email，value为规范的email
-	__author_mapping = {
-		'xl123456': 'wenhuanhuan@xueleyun.com',
-		'wenhuanhuan@task1-sandbox.xuele.net': 'wenhuanhuan@xueleyun.com',
-
-		'chongfq@qq.com': 'chongfaqin@xueleyun.com',
-		'pengxiuzhao@task1-sandbox.xuele.net': 'pengxiuzhao@xueleyun.com',
-		'18210507492@126.com': 'qindongliang@xueleyun.com',
-
-		'15901206690@139.com': 'lvnan@xueleyun.com',
-		'lvnan@xuele.com': 'lvnan@xueleyun.com',
-
-		'王子美@home': 'wangzimei@xueleyun.com',
-		'王子美': 'wangzimei@xueleyun.com',
-
-		'hwwweb@163.com': 'huoweiwei@xueleyun.com',
-		'bigdata@task1-sandbox.xuele.net': 'bigdata',
-		'yue': 'guiqiuyue@xueleyun.com',
-		'lianxiaolei@hqyxjy.com': 'lianxiaolei@xueleyun.com',
-
-		'476143560@qqcom': 'chenliang@xueleyun.com',
-		'chenliang@xuele.com': 'chenliang@xueleyun.com'
-	}
 
 	# 分隔符
 	# author中name与email之间的分隔符，例如：zhaoguojiong <zhaoguojiong@xueleyun.com>
@@ -272,8 +216,8 @@ class Project(object):
 		author_email = author.split(self.__SEP_AUTHOR_EMAIL_BEGIN)[1].strip(self.__SEP_AUTHOR_EMAIL_END)
 		self.logger.debug("split email: %s.", author_email)
 
-		if author_email in self.__author_mapping:
-			new_author = self.__author_mapping.get(author_email)
+		if author_email in config.author_mapping:
+			new_author = config.author_mapping.get(author_email)
 			self.logger.info("Notice: %s --> %s, commit date: %s", author_email, new_author, datetime)
 		else:
 			new_author = author_email
@@ -407,7 +351,7 @@ class Project(object):
 			file_path = os.path.join(path, file)
 
 			# 跳过一些目录或文件
-			if file in self.skipped_path:
+			if file in config.skipped_path:
 				skipped_files += [file_path]
 				self.logger.debug("%s is skipped.", file)
 				continue
@@ -423,7 +367,7 @@ class Project(object):
 			ext = os.path.splitext(file)[1].lower()
 
 			# 跳过一些扩展名（精确匹配）
-			if ext in self.skipped_file_ext:
+			if ext in config.skipped_file_ext:
 				skipped_files += [file_path]
 				self.logger.debug("%s is skipped, because ext: %s", file, ext)
 				continue
@@ -561,7 +505,7 @@ if __name__ == "__main__":
 	# 设置日志级别
 	logger.setLevel(logging.INFO)
 
+	Project.logger = logger
 	proj = Project('git.xuelebj.net','xueleapp','classroom')
-	proj.set_logger(logger)
 	proj.stat_commits('2018-01-01', '2018-02-01')
 	proj.stat_final_lines()

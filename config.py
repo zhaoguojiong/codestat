@@ -132,5 +132,7 @@ author_mapping = {
 	'lianxiaolei@hqyxjy.com': 'lianxiaolei@xueleyun.com',
 
 	'476143560@qqcom': 'chenliang@xueleyun.com',
-	'chenliang@xuele.com': 'chenliang@xueleyun.com'
+	'chenliang@xuele.com': 'chenliang@xueleyun.com',
+
+	'zhouming@task1-sandbox.xuele.net': 'zhouming@xueleyun.com'
 }

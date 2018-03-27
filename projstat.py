@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-'统计一个项目的commits、added lines及final lines。'
+'统计一个项目的commits、added lines及final lines'
 
 __author__ = "Jason Zhao <guojiongzhao@139.com>"
 
@@ -90,6 +90,15 @@ class Project(object):
 		# 整个项目的最终代码行数，dict类型，key为代码文件的扩展名，value为最终代码行数
 		self.__final_lines_stat = {}
 
+		# 不规范的author列表，key为不规范的author，value为一个list，0是规范的author，1是最近的commit时间
+		self.__abnormal_authors = {}
+		# 跳过的文件清单，key为文件名称，value为跳过的原因
+		self.__skipped_files = {}
+		# 编码不是utf-8的文件清单，key为文件名称，value为实际编码格式
+		self.__not_utf8_files = {}
+		# 读取错误的文件清单，key为文件名称，value为错误原因
+		self.__error_files = {}
+
 	# 获取project名称
 	def get_proj_name(self):
 		return self.__proj_name
@@ -110,7 +119,7 @@ class Project(object):
 	def set_original_author(self, value: False):
 		self.__original_author = value
 
-	# 返回保存整个项目的commits和added lines统计结果的proj_stat[]
+	# 返回保存整个项目的commits和added lines统计结果的proj_stat{}
 	def get_proj_stat(self):
 		return self.__proj_stat
 
@@ -121,6 +130,22 @@ class Project(object):
 	# 返回保存final lines统计结果的final_lines_stat{}
 	def get_final_lines_stat(self):
 		return self.__final_lines_stat
+	
+	# 返回不规范的author清单
+	def get_abnormal_authors(self):
+		return self.__abnormal_authors
+
+	# 返回跳过的文件清单
+	def get_skipped_files(self):
+		return self.__skipped_files
+
+	# 返回非utf-8编码的文件清单（但也解析成功了）
+	def get_not_utf8_files(self):
+		return self.__not_utf8_files
+
+	# 返回读取错误的文件名单
+	def get_error_files(self):
+		return self.__error_files
 	
 	# 克隆git项目
 	def __git_clone(self):
@@ -218,7 +243,16 @@ class Project(object):
 
 		if author_email in config.author_mapping:
 			new_author = config.author_mapping.get(author_email)
-			self.logger.info("Notice: %s --> %s, commit date: %s", author_email, new_author, datetime)
+			# 添加到abnormal_authors{}中
+			if author_email in self.__abnormal_authors:
+				# 取出已经添加的commit时间
+				last_datetime = self.__abnormal_authors[author_email][1]
+				# 如果这次的时间更新，则更新时间
+				if datetime > last_datetime:
+					self.__abnormal_authors[author_email][1] = datetime
+			else:
+				self.__abnormal_authors[author_email] = [new_author, datetime]
+			self.logger.debug("Notice: %s --> %s, commit date: %s", author_email, new_author, datetime)
 		else:
 			new_author = author_email
 
@@ -341,7 +375,7 @@ class Project(object):
 	# undefined_ext为一个dict结构，key为未定义的文件扩展名，value为final lines
 	# skipped_files为一个数组结构，保存跳过的文件列表
 	# error_files为一个数组结构，保存read文件有异常的文件列表
-	def __count_lines(self, path, predefined_ext, undefined_ext, skipped_files, error_files, level):
+	def __count_lines(self, path, predefined_ext, undefined_ext, level):
 		# 最多显示3层目录的提示信息（项目根目录为第1层目录）
 		if level <= 2:
 			self.logger.info('counting final lines: %s', path)
@@ -352,14 +386,15 @@ class Project(object):
 
 			# 跳过一些目录或文件
 			if file in config.skipped_path:
-				skipped_files += [file_path]
+				# 添加到成员变量skipped_files{}中
+				self.__skipped_files[file_path] = 'path is matched'
 				self.logger.debug("%s is skipped.", file)
 				continue
 
 			# 如果是目录，则继续递归
 			if os.path.isdir(file_path):
 				level += 1
-				self.__count_lines(file_path, predefined_ext, undefined_ext, skipped_files, error_files, level)
+				self.__count_lines(file_path, predefined_ext, undefined_ext, level)
 				level -= 1
 				continue
 
@@ -368,7 +403,8 @@ class Project(object):
 
 			# 跳过一些扩展名（精确匹配）
 			if ext in config.skipped_file_ext:
-				skipped_files += [file_path]
+				# 添加到成员变量skipped_files{}中
+				self.__skipped_files[file_path] = 'ext is matched'
 				self.logger.debug("%s is skipped, because ext: %s", file, ext)
 				continue
 
@@ -396,28 +432,33 @@ class Project(object):
 						data = f.read()
 					result = chardet.detect(data)
 					codec = result["encoding"]
-					self.logger.info("file: %s, detected encoding: %s", file_path, codec) 
+					# 添加到成员变量not_utf8_files{}中
+					self.__not_utf8_files[file_path] = 'codec: ' + codec
+					self.logger.debug("file: %s, detected encoding: %s", file_path, codec) 
 				except Exception as e:
-					error = e
 					self.logger.debug(e)
 
 				# 获取编码失败，记录到error_files[]中，然后跳过
 				if codec == "":
-					error_files += [file_path + (" (%s)" % error)]
-					self.logger.error("file: %s, error ocurred when detect encoding, just skipped.", file_path)
+					# 添加到成员变量error_files{}中
+					self.__error_files[file_path] = 'codec is ""' 
+					self.logger.debug("file: %s, error ocurred when detect encoding, just skipped.", file_path)
 					continue
 
 				# 未获取到编码（可能是二进制文件），记录到skipped_files[]中，然后跳过
 				if codec is None:
-					skipped_files += [file_path + (" (encoding is %s)" % codec)]
-					self.logger.warn("file: %s, encoding is None (binary?), just skipped.", file_path)
+					# 添加到成员变量error_files{}中
+					self.__error_files[file_path] = 'codec is None(binary?) '
+					self.logger.debug("file: %s, encoding is None (binary?), just skipped.", file_path)
 					continue
 
 				# chardet似乎有bug，有些js文件检测结果为Windows-1254，但实际为utf-8，所以在此做一个修正
 				original_codec = codec
 				if codec == "Windows-1254":
 					codec = "utf-8"
-					self.logger.warn("file: %s, encoding %s --> %s.", file_path, original_codec, codec)
+					# 添加到成员变量not_utf8_files{}中
+					self.__not_utf8_files[file_path] = original_codec + ' --> ' + codec
+					self.logger.debug("file: %s, encoding %s --> %s.", file_path, original_codec, codec)
 
 				# 再次读取文件
 				try:
@@ -426,8 +467,8 @@ class Project(object):
 							file_lines += 1
 					self.logger.debug("%s: %d final lines. [%s]", file_path, file_lines, codec)
 				except Exception as e:
-					# 认为不是一个文本文件，不统计lines
-					error_files += [file_path + (" [%s --> %s] (%s)" % (original_codec, codec, e))]
+					# 添加到成员变量error_files{}中
+					self.__error_files[file_path] = str(e)
 					self.logger.debug(e)
 					continue
 
@@ -456,12 +497,10 @@ class Project(object):
 		for e in self.code_file_ext:
 			predefined_ext[e] = 0
 		undefined_ext = {}
-		skipped_files = []
-		error_files = []
 
 		# 统计该项目下的final lines
 		level = 0
-		self.__count_lines(self.__proj_root, predefined_ext, undefined_ext, skipped_files, error_files, level)
+		self.__count_lines(self.__proj_root, predefined_ext, undefined_ext, level)
 
 		# 计算所有ext的lines的总和（不包含未定义扩展名的lines）
 		for e in predefined_ext:
@@ -471,26 +510,20 @@ class Project(object):
 		# 保存到类的实例变量中
 		self.__final_lines_stat = predefined_ext
 
-		# 打印统计结果
-		self.logger.info('final_lines_stat{}: %s', self.__final_lines_stat)
+		# 打印统计结果（过滤掉行数为0的ext）
+		lines_stat = {}
+		for e in self.__final_lines_stat:
+			lines = self.__final_lines_stat[e]
+			if lines > 0:
+				lines_stat[e] = lines
+		self.logger.info('final_lines_stat{}: %s', lines_stat)
 
 		# 打印undefined_ext{}
 		if len(undefined_ext) > 0:
-			self.logger.info("undefined ext: %s", undefined_ext)
+			self.logger.info("%s (undefined ext): %s", self.FINAL_LINES_OTHERS, undefined_ext)
 		# 打印跳过的文件数量、读取失败的文件数量
-		self.logger.info("skipped files: %d, error files: %d", len(skipped_files), len(error_files))
-
-		# 打印跳过的文件列表
-		# if len(skipped_files) > 0:
-		# 	self.logger.info("skipped %d files:", len(skipped_files))
-		# 	for f in skipped_files:
-		# 		self.logger.info(f)
-		
-		# 打印read异常的文件列表
-		if len(error_files) > 0:
-			self.logger.info("%d error files:", len(error_files))
-			for f in error_files:
-				self.logger.info(f)
+		self.logger.info("skipped files: %d, not utf-8 files: %d, error files: %d", 
+		len(self.__skipped_files), len(self.__not_utf8_files), len(self.__error_files))
 
 if __name__ == "__main__":
 	# 获得logger实例

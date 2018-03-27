@@ -432,11 +432,11 @@ class Project(object):
 						data = f.read()
 					result = chardet.detect(data)
 					codec = result["encoding"]
-					# 添加到成员变量not_utf8_files{}中
-					self.__not_utf8_files[file_path] = 'codec: ' + codec
 					self.logger.debug("file: %s, detected encoding: %s", file_path, codec) 
 				except Exception as e:
+					self.__error_files[file_path] = 'error ocurred when detect codec' 
 					self.logger.debug(e)
+					continue
 
 				# 获取编码失败，记录到error_files[]中，然后跳过
 				if codec == "":
@@ -453,22 +453,24 @@ class Project(object):
 					continue
 
 				# chardet似乎有bug，有些js文件检测结果为Windows-1254，但实际为utf-8，所以在此做一个修正
-				original_codec = codec
-				if codec == "Windows-1254":
-					codec = "utf-8"
-					# 添加到成员变量not_utf8_files{}中
-					self.__not_utf8_files[file_path] = original_codec + ' --> ' + codec
-					self.logger.debug("file: %s, encoding %s --> %s.", file_path, original_codec, codec)
+				# original_codec = codec
+				# if codec == "Windows-1254":
+				# 	codec = "utf-8"
+				# 	# 添加到成员变量not_utf8_files{}中
+				# 	self.__not_utf8_files[file_path] = original_codec + ' --> ' + codec
+				# 	self.logger.debug("file: %s, encoding %s --> %s.", file_path, original_codec, codec)
 
 				# 再次读取文件
 				try:
 					with open(file_path, "r", encoding = codec) as f:
 						for l in f:
 							file_lines += 1
+					# 添加到成员变量not_utf8_files{}中
+					self.__not_utf8_files[file_path] = 'codec: ' + codec
 					self.logger.debug("%s: %d final lines. [%s]", file_path, file_lines, codec)
 				except Exception as e:
 					# 添加到成员变量error_files{}中
-					self.__error_files[file_path] = str(e)
+					self.__error_files[file_path] = 'codec: ' + codec + ' [' + str(e) + ']'
 					self.logger.debug(e)
 					continue
 

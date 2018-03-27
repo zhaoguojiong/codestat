@@ -236,7 +236,7 @@ class Project(object):
 
 	# 从author中解析出email，并转换为规范的email
 	# author格式为：zhaoguojiong <zhaoguojiong@xueleyun.com>
-	def __normalize_author_email(self, author, datetime):
+	def __normalize_author_email(self, author, datetime, commit_id):
 		# 截取出原始的email
 		author_email = author.split(self.__SEP_AUTHOR_EMAIL_BEGIN)[1].strip(self.__SEP_AUTHOR_EMAIL_END)
 		self.logger.debug("split email: %s.", author_email)
@@ -250,9 +250,12 @@ class Project(object):
 				# 如果这次的时间更新，则更新时间
 				if datetime > last_datetime:
 					self.__abnormal_authors[author_email][1] = datetime
+					self.__abnormal_authors[author_email][2] = commit_id
+					self.__abnormal_authors[author_email][3] = self.__proj_name
 			else:
-				self.__abnormal_authors[author_email] = [new_author, datetime]
-			self.logger.debug("Notice: %s --> %s, commit date: %s", author_email, new_author, datetime)
+				self.__abnormal_authors[author_email] = [new_author, datetime, commit_id, self.__proj_name]
+			self.logger.debug("Notice: %s --> %s, commit date: %s, commit id: %s, project: %s", 
+			author_email, new_author, datetime, commit_id, self.__proj_name)
 		else:
 			new_author = author_email
 
@@ -280,7 +283,7 @@ class Project(object):
 		#  3 files changed, 108 insertions(+), 9 deletions(-)	
 		with open(filename, "r", encoding="utf-8") as f:
 			author = ""
-			commit = ""
+			commit_id = ""
 
 			try:
 				for line in f:
@@ -290,7 +293,7 @@ class Project(object):
 					# 处理commit行
 					if self.__SEP_GIT_LOG_COLUMN in line:
 						# 截取出commit id、author和datetime
-						commit = line.split(self.__SEP_GIT_LOG_COLUMN)[0]
+						commit_id = line.split(self.__SEP_GIT_LOG_COLUMN)[0]
 						author = line.split(self.__SEP_GIT_LOG_COLUMN)[1]
 						datetime = line.split(self.__SEP_GIT_LOG_COLUMN)[2]
 
@@ -299,7 +302,7 @@ class Project(object):
 							new_author = author
 						else:
 							# 转换为规范的author email
-							new_author = self.__normalize_author_email(author, datetime)
+							new_author = self.__normalize_author_email(author, datetime, commit_id)
 
 						# 累加该人的commits，更新到author_stat{}中
 						if new_author in self.__author_stat:

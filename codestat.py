@@ -1171,8 +1171,10 @@ class CodeStat(object):
 								the_datetime = the_authors[a][1]
 								if the_datetime > last_datetime:
 									self.__abnormal_authors[a][1] = the_datetime
+									self.__abnormal_authors[a][2] = the_authors[a][2]
+									self.__abnormal_authors[a][3] = the_authors[a][3]
 							else:
-								self.__abnormal_authors[a] = [the_authors[a][0], the_authors[a][1]]
+								self.__abnormal_authors[a] = [the_authors[a][0], the_authors[a][1], the_authors[a][2], the_authors[a][3]]
 
 					num += 1
 				logger.info('')
@@ -1211,11 +1213,11 @@ class CodeStat(object):
 
 		# 输出不规范的author清单
 		logger.info('abnormal authors:')
-		logger.info('%s%s%s' % ('abnormal'.ljust(50), 'normal'.ljust(30), 'last commit time'))
+		logger.info('%s%s%s' % ('abnormal'.ljust(50), 'normal'.ljust(30), 'last commit'))
 		for a in self.__abnormal_authors:
 			normal_a = self.__abnormal_authors[a][0]
-			last_datetime = self.__abnormal_authors[a][1]
-			logger.info('%s%s%s' % (a.ljust(50), normal_a.ljust(30), last_datetime))
+			last_commit = self.__abnormal_authors[a][1] + ', ' + self.__abnormal_authors[a][2] + ', ' + self.__abnormal_authors[a][3]
+			logger.info('%s%s%s' % (a.ljust(50), normal_a.ljust(30), last_commit))
 		logger.info('')
 
 		# 将统计结果输出到文件中

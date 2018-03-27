@@ -90,6 +90,7 @@ skipped_file_ext = [
 	".png", ".gif", ".jpg", ".bmp", ".ico", ".cur", ".mp3", ".wav", ".m4a", ".flac", ".wma", ".wmv", ".mp4", ".flv",
 	".otf", ".eot", ".ttf", ".woff", ".swf", ".crc", ".psd", ".ogg",
 	".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pages", ".numbers", ".key", ".vsd",
+	".pyc",
 	# 其它数据文件
 	".out", ".txt", ".log", ".dic", ".csv", 
 	".avro"]

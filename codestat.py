@@ -1421,8 +1421,9 @@ class CodeStat(object):
 			max_file_len = 150
 		logger.info('%s%s' % ('file'.ljust(max_file_len), 'reason'))
 		for f in files:
+			fname = utils.fit_filname(f, 150)
 			reason = files[f]
-			logger.info('%s%s' % (f.ljust(max_file_len), reason))
+			logger.info('%s%s' % (fname.ljust(max_file_len), reason))
 		logger.info('')
 
 	# 处理final lines

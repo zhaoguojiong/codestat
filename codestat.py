@@ -119,7 +119,14 @@ class ProjStat(Stat):
 	# proj参数类型是Project对象
 	def add(self, proj):
 		proj_name = proj.get_proj_name()
-		self.__stat[proj_name] = proj.get_proj_stat()
+		# 转换项目名称，并合并统计结果
+		if proj_name in config.proj_merge:
+			proj_name = config.proj_merge[proj_name]
+		if not (proj_name in self.__stat):
+			self.__stat[proj_name] = proj.get_proj_stat()
+		else:
+			self.__stat[proj_name][1] += proj.get_proj_stat()[1]
+			self.__stat[proj_name][2] += proj.get_proj_stat()[2]
 	
 	# 计算proj_stat{}的lines和commits的总数
 	def sum(self):
@@ -196,9 +203,20 @@ class ProjAuthorStat(Stat):
 
 	# proj参数类型是Project对象
 	def add(self, proj):
-		proj_name = proj.get_proj_name()
-		self.__stat[proj_name] = proj.get_author_stat()
-	
+		proj_name = proj.get_proj_name()	
+		# 转换项目名称，并合并统计结果
+		if proj_name in config.proj_merge:
+			proj_name = config.proj_merge[proj_name]
+		if not (proj_name in self.__stat):
+			self.__stat[proj_name] = proj.get_author_stat()
+		else:
+			for author in proj.get_author_stat():
+				if author in self.__stat[proj_name]:
+					self.__stat[proj_name][author][1] += proj.get_author_stat()[author][1]
+					self.__stat[proj_name][author][2] += proj.get_author_stat()[author][2]
+				else:
+					self.__stat[proj_name][author] = proj.get_author_stat()[author]
+
 	# 格式化打印输出proj_author_stat{}的一行
 	def __print_oneline(self, cols, author_width: 30):
 		# 设置各列的宽度
@@ -1184,7 +1202,11 @@ class CodeStat(object):
 				logger.info('projects not changed:')
 				for group in config.git_proj:
 					for proj in config.git_proj[group]:
-						if not (proj in proj_stat.get_stat()):
+						if proj in config.proj_merge:
+							new_proj = config.proj_merge[proj]
+						else:
+							new_proj = proj
+						if not (new_proj in proj_stat.get_stat()):
 							logger.info(proj)
 				logger.info('')
 

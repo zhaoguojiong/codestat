@@ -10,7 +10,8 @@ git_host = 'git.xuelebj.net'
 # 要处理的git项目清单，dict类型，key为group名称，value为project名称
 git_proj = {
 	'xueledata': [
-		'treasury',
+		'treasury-old', # 2018-04-01 modify
+		'treasury-new', # 2018-04-01 add
 		'tracking-data-monitor',
 		'testkit',
 		'dataservice-teach',
@@ -136,4 +137,28 @@ author_mapping = {
 	'chenliang@xuele.com': 'chenliang@xueleyun.com',
 
 	'zhouming@task1-sandbox.xuele.net': 'zhouming@xueleyun.com'
+}
+
+# 某月、某个项目需要剔除的added lines
+proj_stat_fix = {
+	'2018-03-01':{
+		'question-difficulty-estimation': {
+			'chongfaqin@xueleyun.com': -561210 # data文件
+		},
+		'kp-estimation': {
+			'chongfaqin@xueleyun.com': -2091003 # data文件
+		},
+		'treasury-new': {
+			'zhuxu@xueleyun.com': -353586 # 从treasury-old迁移而来
+		},
+		'bigscreen': {
+			'chenliang@xueleyun.com': -61383 # 第三方js（coordinate.js: 3482；echarts-all.js: 49884；UK_geo.json: 5232；flipclock.js: 2785）
+		}
+	}
+}
+
+# 需要合并的项目
+proj_merge = {
+	'treasury-old': 'treasury',
+	'treasury-new': 'treasury'
 }

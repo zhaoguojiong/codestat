@@ -353,6 +353,32 @@ class Project(object):
 		self.logger.info("total added lines: %s, total commits: %s, total authors: %s",
 			total_lines, total_commits, len(self.__author_stat))
 
+	# 剔除配置的added lines
+	def __fix_added_lines(self, since, before):
+		for month in config.proj_stat_fix:
+			# 配置的月份落在[since, before)区间内时，才进行剔除
+			if not (month >= since and month < before):
+				continue
+			
+			if not (self.__proj_name in config.proj_stat_fix[month]):
+				return
+
+			for author in config.proj_stat_fix[month][self.__proj_name]:
+				if not (author in self.__author_stat):
+					continue
+				
+				fixed_lines = config.proj_stat_fix[month][self.__proj_name][author]
+				self.__author_stat[author][1] += fixed_lines
+				self.__proj_stat[1] += fixed_lines
+				self.logger.info('fixed added lines: %s, %d', author, fixed_lines)
+		
+	# 合并项目的added lines（实际上是返回配置的项目名称）
+	def __merge_added_lines(self):
+		if self.__proj_name in config.proj_merge:
+			old_proj_name = self.__proj_name
+			self.__proj_name = config.proj_merge[self.__proj_name]
+			self.logger.info('%s --> %s', old_proj_name, self.__proj_name)
+	
 	# 统计整个项目的commits和added lines，保存到类的实例变量中
 	# 统计结果不空时，返回True；否则，返回False
 	def stat_commits(self, since, before):
@@ -369,6 +395,10 @@ class Project(object):
 
 		# 解析文件，统计commits和added lines，输出到2个实例变量中
 		self.__parse_git_log_stat_file()
+		# 剔除配置的added lines
+		self.__fix_added_lines(since, before)
+		# 合并配置的项目
+		self.__merge_added_lines()
 
 		return not (self.__proj_stat == [])
 

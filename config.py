@@ -157,8 +157,9 @@ proj_stat_fix = {
 	}
 }
 
-# 需要合并的项目
+# 需要合并的项目（因为新旧项目迁移）
+# value数组中的第二个元素：如果是1，则表示新项目；如果是0，则表示旧项目（不统计final lines）
 proj_merge = {
-	'treasury-old': 'treasury',
-	'treasury-new': 'treasury'
+	'treasury-old': ['treasury', 0],
+	'treasury-new': ['treasury', 1]
 }

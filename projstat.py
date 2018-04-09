@@ -372,11 +372,11 @@ class Project(object):
 				self.__proj_stat[1] += fixed_lines
 				self.logger.info('fixed added lines: %s, %d', author, fixed_lines)
 		
-	# 合并项目的added lines（实际上是返回配置的项目名称）
-	def __merge_added_lines(self):
+	# 重命名项目名称
+	def __rename_proj(self):
 		if self.__proj_name in config.proj_merge:
 			old_proj_name = self.__proj_name
-			self.__proj_name = config.proj_merge[self.__proj_name]
+			self.__proj_name = config.proj_merge[self.__proj_name][0]
 			self.logger.info('%s --> %s', old_proj_name, self.__proj_name)
 	
 	# 统计整个项目的commits和added lines，保存到类的实例变量中
@@ -397,8 +397,8 @@ class Project(object):
 		self.__parse_git_log_stat_file()
 		# 剔除配置的added lines
 		self.__fix_added_lines(since, before)
-		# 合并配置的项目
-		self.__merge_added_lines()
+		# 返回给调用者之前重命名项目名称，目的是让调用者按照这个名称合并added lines
+		self.__rename_proj()
 
 		return not (self.__proj_stat == [])
 
@@ -520,6 +520,12 @@ class Project(object):
 
 	# 统计final lines，保存到类的实例变量中
 	def stat_final_lines(self):
+		# 如果是旧项目，则不统计，直接返回
+		if self.__proj_name in config.proj_merge:
+			if config.proj_merge[self.__proj_name][1] == 0:
+				self.logger.info('old project, just discarded.')
+				return False
+		
 		# 如果需要更新代码，先执行git pull操作（pull master分支的代码）
 		if self.__update_codes_needed:
 			self.__git_pull("master")
@@ -559,6 +565,11 @@ class Project(object):
 		# 打印跳过的文件数量、读取失败的文件数量
 		self.logger.info("skipped files: %d, not utf-8 files: %d, error files: %d", 
 		len(self.__skipped_files), len(self.__not_utf8_files), len(self.__error_files))
+
+		# 如果配置了新的项目名称，则重命名项目名称
+		self.__rename_proj()
+
+		return True
 
 if __name__ == "__main__":
 	# 获得logger实例

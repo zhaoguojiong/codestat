@@ -121,7 +121,7 @@ class ProjStat(Stat):
 		proj_name = proj.get_proj_name()
 		# 转换项目名称，并合并统计结果
 		if proj_name in config.proj_merge:
-			proj_name = config.proj_merge[proj_name]
+			proj_name = config.proj_merge[proj_name][0]
 		if not (proj_name in self.__stat):
 			self.__stat[proj_name] = proj.get_proj_stat()
 		else:
@@ -206,7 +206,7 @@ class ProjAuthorStat(Stat):
 		proj_name = proj.get_proj_name()	
 		# 转换项目名称，并合并统计结果
 		if proj_name in config.proj_merge:
-			proj_name = config.proj_merge[proj_name]
+			proj_name = config.proj_merge[proj_name][0]
 		if not (proj_name in self.__stat):
 			self.__stat[proj_name] = proj.get_author_stat()
 		else:
@@ -1203,7 +1203,7 @@ class CodeStat(object):
 				for group in config.git_proj:
 					for proj in config.git_proj[group]:
 						if proj in config.proj_merge:
-							new_proj = config.proj_merge[proj]
+							new_proj = config.proj_merge[proj][0]
 						else:
 							new_proj = proj
 						if not (new_proj in proj_stat.get_stat()):
@@ -1465,17 +1465,17 @@ class CodeStat(object):
 				# 统计该项目的final lines
 				project = projstat.Project(config.git_host, group, proj)
 				project.set_update_codes_need(self.__pv[P_UPDATE_CODES])
-				project.stat_final_lines()
-				self.__final_lines_stat.add(project)
+				if project.stat_final_lines():
+					self.__final_lines_stat.add(project)
 
-				# 添加到skipped_file{}中
-				self.__skipped_files.update(project.get_skipped_files())
+					# 添加到skipped_file{}中
+					self.__skipped_files.update(project.get_skipped_files())
 
-				# 添加到not_utf8_files{}中
-				self.__not_utf8_files.update(project.get_not_utf8_files())
-				
-				# 添加到error_files{}中
-				self.__error_files.update(project.get_error_files())
+					# 添加到not_utf8_files{}中
+					self.__not_utf8_files.update(project.get_not_utf8_files())
+					
+					# 添加到error_files{}中
+					self.__error_files.update(project.get_error_files())
 
 				num += 1
 			logger.info('')

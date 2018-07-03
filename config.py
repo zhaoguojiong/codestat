@@ -66,7 +66,10 @@ git_proj = {
 		'kp-estimation', # 2018-03-06 add
 		'bigscreen', # 2018-03-09 add
 		'bigscreen-api', # 2018-03-09 add
-		'kpdiag-autotest' # 2018-03-12 add
+		'kpdiag-autotest', # 2018-03-12 add
+		'modules-cas', # 2018-04-10 add
+		'bigscreen-xstream-autotest', # 2018-05-09 add
+		'metadata-compare' # 2018-05-16 add
 	],
 	'xueleapp': [
 		'classroom',
@@ -74,7 +77,9 @@ git_proj = {
 		'smartclass-api',
 		'py-convert-manager',
 		'ppt-converter',
-		'call-convert-machine-mfc'
+		'call-convert-machine-mfc',
+		'winwisdom', # 2018-04-12 add
+		'collaborative-editing' # 2018-04-20 add
 	]
 }
 
@@ -92,6 +97,7 @@ skipped_file_ext = [
 	".otf", ".eot", ".ttf", ".woff", ".swf", ".crc", ".psd", ".ogg",
 	".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pages", ".numbers", ".key", ".vsd",
 	".pyc",
+	".dll", ".lib", ".bin", ".pak",
 	# 其它数据文件
 	".out", ".txt", ".log", ".dic", ".csv", 
 	".avro"]
@@ -111,7 +117,15 @@ skipped_path = [
 	# Mac
 	'.DS_Store',
 	# Java编译后输出
-	'target']
+	'target',
+	# bigscreen需要过滤的第三方js等文件, 2018-04-10 added
+	'coordinate.js', 'echarts-all.js', 'UK_geo.json', 'flipclock.js',
+	# C++ Debug目录
+	'Debug',
+
+	# winwisdom的一些目录（全目录）
+	'./git/winwisdom/third_party'
+]
 
 # 特殊author email的映射，dict结构，key为不规范的email，value为规范的email
 author_mapping = {
@@ -124,6 +138,7 @@ author_mapping = {
 
 	'15901206690@139.com': 'lvnan@xueleyun.com',
 	'lvnan@xuele.com': 'lvnan@xueleyun.com',
+	'lvnan@task1-sandbox.xuele.net': 'lvnan@xueleyun.com',
 
 	'王子美@home': 'wangzimei@xueleyun.com',
 	'王子美': 'wangzimei@xueleyun.com',
@@ -136,7 +151,15 @@ author_mapping = {
 	'476143560@qqcom': 'chenliang@xueleyun.com',
 	'chenliang@xuele.com': 'chenliang@xueleyun.com',
 
-	'zhouming@task1-sandbox.xuele.net': 'zhouming@xueleyun.com'
+	'zhouming@task1-sandbox.xuele.net': 'zhouming@xueleyun.com',
+
+	'12345678': 'zoutao@xueleyun.com',
+	'ixciel@ixciel.com': 'malvcheng@xueleyun.com',
+
+	'Xl123456': 'yangchao@xueleyun.com',
+	'332938647@qq.com': 'yangchao@xueleyun.com',
+
+	'837755145@qq.com': 'liushuang@xueleyun.com'
 }
 
 # 某月、某个项目需要剔除的added lines
@@ -153,6 +176,24 @@ proj_stat_fix = {
 		},
 		'bigscreen': {
 			'chenliang@xueleyun.com': -61383 # 第三方js（coordinate.js: 3482；echarts-all.js: 49884；UK_geo.json: 5232；flipclock.js: 2785）
+		}
+	},
+	'2018-04-01':{
+		'content-analyzer': {
+			'chongfaqin@xueleyun.com': -276029 # dic文件
+		}
+	},
+	'2018-05-01':{
+		'content-analyzer': {
+			'lianxiaolei@xueleyun.com': -992611 # dic文件
+		},
+		'winwisdom': {
+			'zoutao@xueleyun.com': -43611 # 第三方DuiLib代码
+		}
+	},
+	'2018-06-01':{
+		'kp-estimation': {
+			'lianxiaolei@xueleyun.com': -520438 # dic、txt等data文件
 		}
 	}
 }

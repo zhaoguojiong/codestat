@@ -417,6 +417,13 @@ class Project(object):
 			# 获得完整路径
 			file_path = os.path.join(path, file)
 
+			# 跳过一些目录（全目录，例如“./git/winwisdom/third_party”）
+			if file_path in config.skipped_path:
+				# 添加到成员变量skipped_files{}中
+				self.__skipped_files[file_path] = 'full path is matched'
+				self.logger.info("%s is skipped.", file_path)
+				continue
+			
 			# 跳过一些目录或文件
 			if file in config.skipped_path:
 				# 添加到成员变量skipped_files{}中

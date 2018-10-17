@@ -62,14 +62,20 @@ git_proj = {
 		'XScheduler',
 		'XFlume',
 		'question-sim',
-		'question-difficulty-estimation', # 2018-03-06 add
-		'kp-estimation', # 2018-03-06 add
-		'bigscreen', # 2018-03-09 add
-		'bigscreen-api', # 2018-03-09 add
-		'kpdiag-autotest', # 2018-03-12 add
-		'modules-cas', # 2018-04-10 add
-		'bigscreen-xstream-autotest', # 2018-05-09 add
-		'metadata-compare' # 2018-05-16 add
+		'question-difficulty-estimation',  # 2018-03-06 add
+		'kp-estimation',  # 2018-03-06 add
+		'bigscreen',  # 2018-03-09 add
+		'bigscreen-api',  # 2018-03-09 add
+		'kpdiag-autotest',  # 2018-03-12 add
+		'modules-cas',  # 2018-04-10 add
+		'bigscreen-xstream-autotest',  # 2018-05-09 add
+		'dataservice-evaluation',  # 2018-06-06 add
+		'metadata-compare',  # 2018-05-16 add
+		'edu-data-batch',  # 2018-08-02 add
+		'tracking-data-etl',  # 2018-08-04 add
+		'dataservice-circle',  # 2018-08-04 add
+		'bdmc-web',   # 2018-10-08 add
+		'bdmc-api',   # 2018-10-17 add
 	],
 	'xueleapp': [
 		'classroom',
@@ -78,8 +84,15 @@ git_proj = {
 		'py-convert-manager',
 		'ppt-converter',
 		'call-convert-machine-mfc',
-		'winwisdom', # 2018-04-12 add
-		'collaborative-editing' # 2018-04-20 add
+		'winwisdom',  # 2018-04-12 add
+		# 'collaborative-editing' # 2018-04-20 add
+		'exam-omr',  # 2018-07-13 add
+		'coplan-web',  # 2018-07-17 add
+		'coplan-controller',  # 2018-07-17 add
+		'coplan-api',  # 2018-07-17 add
+		'exam-omr-api',  # 2018-07-27 add
+		'x-daisydiff',  # 2018-08-02 add
+		'exam-omr-dispatch',  # 2018-09-27 add
 	]
 }
 
@@ -124,7 +137,11 @@ skipped_path = [
 	'Debug',
 
 	# winwisdom的一些目录（全目录）
-	'./git/winwisdom/third_party'
+	'./git/winwisdom/third_party',
+
+	# coplan-web的一些目录（全目录）
+	'./git/coplan-web/app/third-lib',
+	'./git/coplan-web/mobile/third-lib',
 ]
 
 # 特殊author email的映射，dict结构，key为不规范的email，value为规范的email
@@ -195,7 +212,17 @@ proj_stat_fix = {
 		'kp-estimation': {
 			'lianxiaolei@xueleyun.com': -520438 # dic、txt等data文件
 		}
-	}
+	},
+	'2018-07-01':{
+		'coplan-web': {
+			'yangchao@xueleyun.com': -127285 # 第三方库ueditor的第一次上传（后面的修改没有剔除）
+		}
+	},
+	'2018-08-01':{
+		'coplan-web': {
+			'yangchao@xueleyun.com': -151642 # 第三方库的第一次上传（后面的修改没有剔除）、打包编译后的dist下的文件
+		}
+	},
 }
 
 # 需要合并的项目（因为新旧项目迁移）

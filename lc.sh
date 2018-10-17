@@ -1,0 +1,1 @@
+find ./git/winwisdom/Extension/DuiLib_Redrain/DuiLib "(" -name "*.cpp" -or -name "*.h" -or -name "*.vcproj" -or -name "*.vcxproj" -or -name "*.filters" -or -name "*.user" -or -name "*.tlh" -or -name "*.c" -or -name "*.sln" -or -name "*.txt" -or -name "*.xml" -or -name "*.md" ")" -print | xargs wc -l

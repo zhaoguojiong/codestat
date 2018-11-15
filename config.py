@@ -93,6 +93,9 @@ git_proj = {
 		'exam-omr-api',  # 2018-07-27 add
 		'x-daisydiff',  # 2018-08-02 add
 		'exam-omr-dispatch',  # 2018-09-27 add
+		'face-recognition',  # 2018-10-18 add
+		'fr-web',  # 2018-10-23 add
+		'ocr',  # 2018-10-29 add
 	]
 }
 
@@ -222,6 +225,17 @@ proj_stat_fix = {
 		'coplan-web': {
 			'yangchao@xueleyun.com': -151642 # 第三方库的第一次上传（后面的修改没有剔除）、打包编译后的dist下的文件
 		}
+	},
+	'2018-10-01':{
+		'bdmc-web': {
+			'yangwenhai@xueleyun.com': -8451, # package-lock.json、地图数据（*.json）等
+			'yangchao@xueleyun.com': -7276, # yarn.lock
+			'liufangfang@xueleyun.com': -10079, # package-lock.json等
+			'weipengda@xueleyun.com': -9987, # 地图数据（*.json）、第三方js等
+		},
+		'fr-web': {
+			'jiangchong@xueleyun.com': -10194 # package-lock.json
+		},
 	},
 }
 

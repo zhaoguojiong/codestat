@@ -76,6 +76,15 @@ git_proj = {
 		'dataservice-circle',  # 2018-08-04 add
 		'bdmc-web',   # 2018-10-08 add
 		'bdmc-api',   # 2018-10-17 add
+		'treasury-utils',  # 2018-11-23 add
+		'dataservice-trot',  # 2018-12-03 add
+		'trot-batch',  # 2018-12-14 add
+		'x-datax',  # 2019-03-04 add
+		'treasury-pack',  # 2019-03-08 add
+		'test-helper',  # 2019-03-08 add
+		'treasury-bi',  # 2019-04-11 add
+		'dataservice-bi',  # 2019-04-15 add
+		'resource-score',  # 2019-06-03 add
 	],
 	'xueleapp': [
 		'classroom',
@@ -95,7 +104,14 @@ git_proj = {
 		'exam-omr-dispatch',  # 2018-09-27 add
 		'face-recognition',  # 2018-10-18 add
 		'fr-web',  # 2018-10-23 add
-		'ocr',  # 2018-10-29 add
+		'ocr-old',  # 2018-10-29 add，2019-02-20 modify
+		'ocr-new',  # 2019-02-02 add
+		'py-utils',  # 2018-11-20 add
+		'x-xdocreport',  # 2019-03-06 add
+		'classroom-rc-wxmp',  # 2019-04-25 add
+		'classroom-rc',  # 2019-04-25 add
+		'question-recognition',  # 2019-04-28 add
+		'x-cv',  # 2019-05-07 add
 	]
 }
 
@@ -112,7 +128,7 @@ skipped_file_ext = [
 	".png", ".gif", ".jpg", ".bmp", ".ico", ".cur", ".mp3", ".wav", ".m4a", ".flac", ".wma", ".wmv", ".mp4", ".flv",
 	".otf", ".eot", ".ttf", ".woff", ".swf", ".crc", ".psd", ".ogg",
 	".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pages", ".numbers", ".key", ".vsd",
-	".pyc",
+	".pyc", ".ipynb",
 	".dll", ".lib", ".bin", ".pak",
 	# 其它数据文件
 	".out", ".txt", ".log", ".dic", ".csv", 
@@ -172,6 +188,7 @@ author_mapping = {
 	'chenliang@xuele.com': 'chenliang@xueleyun.com',
 
 	'zhouming@task1-sandbox.xuele.net': 'zhouming@xueleyun.com',
+	'zhouming@SANDBOX-HADOOP-04.xuele.net': 'zhouming@xueleyun.com',
 
 	'12345678': 'zoutao@xueleyun.com',
 	'ixciel@ixciel.com': 'malvcheng@xueleyun.com',
@@ -179,7 +196,23 @@ author_mapping = {
 	'Xl123456': 'yangchao@xueleyun.com',
 	'332938647@qq.com': 'yangchao@xueleyun.com',
 
-	'837755145@qq.com': 'liushuang@xueleyun.com'
+	'837755145@qq.com': 'liushuang@xueleyun.com',
+
+	'zhuxu@SANDBOX-HADOOP-04.xuele.net': 'zhuxu@xueleyun.com',
+
+	'wenhuanhuan@SANDBOX-HADOOP-04.xuele.net': 'wenhuanhuan@xueleyun.com',
+
+	'liuyuqing@SANDBOX-HADOOP-04.xuele.net': 'liuyuqing@xueleyun.com',
+
+	'jiangchongluck@163.com': 'jiangchong@xueleyun.com',
+
+    'leihailong@task1-sandbox.xuele.net': 'leihailong@xueleyun.com',
+    'leihailong@SANDBOX-HADOOP-04.xuele.net': 'leihailong@xueleyun.com',
+    'leihailong@xueleun.com': 'leihailong@xueleyun.com',
+
+	'http://git.xuelebj.net': 'wanggaoliang@xueleyun.com',
+    'guojiongzhao@139.com': 'zhaoguojiong@xueleyun.com',
+    'yuanwei@hzlzedu.com.cn': 'yuanwei@xueleyun.com',
 }
 
 # 某月、某个项目需要剔除的added lines
@@ -237,11 +270,53 @@ proj_stat_fix = {
 			'jiangchong@xueleyun.com': -10194 # package-lock.json
 		},
 	},
+	'2018-11-01':{
+		'ocr': {
+			'lianxiaolei@xueleyun.com': -15955 # *.ipynb
+		}
+	},
+	'2018-12-01':{
+		'winwisdom': {
+			'yangwenhai@xueleyun.com': -17567, # 实际上是王国涛提交的代码（因为本机git user配置成了杨文海）
+		}
+	},
+	'2019-01-01':{
+		'winwisdom': {
+			'yangwenhai@xueleyun.com': -10788, # 实际上是王国涛提交的代码（因为本机git user配置成了杨文海）
+		}
+	},
+	'2019-02-01':{
+		'ocr-old': {
+			'lianxiaolei@xueleyun.com': -11972, # *.ipynb
+		},
+		'ocr-new': {
+			'lianxiaolei@xueleyun.com': -21103, # 从ocr-old迁移而来的初始代码
+		},
+		'winwisdom': {
+			'yangwenhai@xueleyun.com': -6255, # 实际上是王国涛提交的代码（因为本机git user配置成了杨文海）
+		}
+	},
+	'2019-03-01':{
+		'x-xdocreport': {
+			'lvnan@xueleyun.com': -207240, # 开源项目的初始代码
+		},
+	},
+	'2019-05-01':{
+		'question-recognition': {
+			'qindongliang@xueleyun.com': -64524, # 临时的前端代码（bootstrap、jquery等）
+		},
+		'classroom-rc': {
+			'yuanwei@xueleyun.com': -8952 # package-lock.json
+		},
+	},
 }
 
 # 需要合并的项目（因为新旧项目迁移）
 # value数组中的第二个元素：如果是1，则表示新项目；如果是0，则表示旧项目（不统计final lines）
 proj_merge = {
 	'treasury-old': ['treasury', 0],
-	'treasury-new': ['treasury', 1]
+	'treasury-new': ['treasury', 1],
+	
+	'ocr-old': ['ocr', 0],
+	'ocr-new': ['ocr', 1],
 }

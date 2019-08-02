@@ -213,6 +213,9 @@ author_mapping = {
 	'http://git.xuelebj.net': 'wanggaoliang@xueleyun.com',
     'guojiongzhao@139.com': 'zhaoguojiong@xueleyun.com',
     'yuanwei@hzlzedu.com.cn': 'yuanwei@xueleyun.com',
+
+	'dongkunshan@gaosiedu.com': 'dongkunshan@xueleyun.com',
+    'windwithfo@yeah.net': 'dongkunshan@xueleyun.com',
 }
 
 # 某月、某个项目需要剔除的added lines

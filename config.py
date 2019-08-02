@@ -312,6 +312,14 @@ proj_stat_fix = {
 			'yuanwei@xueleyun.com': -8952 # package-lock.json
 		},
 	},
+	'2019-07-01':{
+		'classroom': {
+			'dongkunshan@xueleyun.com': -10715, # workbox库
+		},
+		'classroom-rc': {
+			'weipengda@xueleyun.com': -55370 # pdf.worker.js
+		},
+	},
 }
 
 # 需要合并的项目（因为新旧项目迁移）

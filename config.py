@@ -320,6 +320,11 @@ proj_stat_fix = {
 			'weipengda@xueleyun.com': -55370 # pdf.worker.js
 		},
 	},
+	'2019-08-01':{
+		'classroom': {
+			'dongkunshan@xueleyun.com': -27313, # package-lock.json
+		},
+	},
 }
 
 # 需要合并的项目（因为新旧项目迁移）
